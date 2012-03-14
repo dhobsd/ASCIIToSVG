@@ -84,7 +84,7 @@ file. Basic flow through the API is:
 
     :::php
     $asciiDiagram = file_get_contents('some_pretty_art');
-    $o = new ASCIIToSVG($asciiDiagram);
+    $o = new org\dh0\a2s\ASCIIToSVG($asciiDiagram);
     $o->setDimensionScale(9, 16);
     $o->parseGrid();
     file_put_contents('some_pretty_art.svg', $o->render());

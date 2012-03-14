@@ -1,4 +1,3 @@
-#/usr/bin/env php
 <?php
 /*
  * a2s
@@ -106,3 +105,4 @@ $o->setDimensionScale($scale[0], $scale[1]);
 $o->parseGrid();
 
 file_put_contents($outFile, $o->render());
+

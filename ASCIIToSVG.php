@@ -100,8 +100,8 @@ class Point {
     $this->flags = 0;
 
     $s = Scale::getInstance();
-    $this->x = $x * $s->xScale;
-    $this->y = $y * $s->yScale;
+    $this->x = ($x * $s->xScale) + ($s->xScale / 2);
+    $this->y = ($y * $s->yScale) + ($s->yScale / 2);
 
     $this->gridX = $x;
     $this->gridY = $y;
