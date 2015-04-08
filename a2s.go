@@ -1230,7 +1230,7 @@ type ASCIIToSVG struct {
      */
     this.grid = explode("\n", data);
 
-    foreach (this.grid as k => line) {
+    for k, line := range this.grid {
       this.grid[k] = str_split(line);
     }
 
@@ -1353,8 +1353,8 @@ type ASCIIToSVG struct {
     this.svgObjects.SetOption('fill', 'none');
 
     /* Scan the grid for corners */
-    foreach (this.grid as row => line) {
-      foreach (line as col => char) {
+    for row, line := range this.grid {
+      for col, char := range line {
         if (this.isCorner(char)) {
           path = NewSVGPath();
 
@@ -1749,7 +1749,7 @@ type ASCIIToSVG struct {
     boxes = this.svgObjects.GetGroup('boxes');
     bound = count(boxes);
 
-    foreach (this.grid as row => line) {
+    for row, line := range this.grid {
       cols = count(line);
       for (i = 0; i < cols; i++) {
         if (this.getChar(row, i) != ' ') {
