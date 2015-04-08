@@ -29,6 +29,8 @@
 
 package main
 
+import "fmt"
+
 // include 'svg-path.lex.php';
 // include 'colors.php';
 
@@ -248,7 +250,7 @@ const Point_IMARKER = 0x8
 const Point_TICK = 0x10
 const Point_DOT = 0x20
 
-func NewPoint(X, Y Coord) *Point {
+func NewPoint(X, Y Coord) Point {
 	this := Point{}
 	this.Flags = 0
 
@@ -258,7 +260,7 @@ func NewPoint(X, Y Coord) *Point {
 
 	this.GridX = X
 	this.GridY = Y
-	return &this
+	return this
 }
 
 type Object struct{}
@@ -340,15 +342,21 @@ func (this *SVGGroup) Render() {
  * The Path class represents lines and polygons.
  */
 type SVGPath struct {
-	options
-	points
-	ticks
-	Flags
-	text
-	name
+	options map[string]string
+	points  []Point
+	ticks   []Point
+	Flags   Point_Flags
+	text    []*SVGText
+	name    string
 }
 
-var SVGPath_id = 0
+var _SVGPath_id = 0
+
+func SVGPath_id() string {
+	s := fmt.Sprintf("%d", _SVGPath_id)
+	_SVGPath_id++
+	return s
+}
 
 const CLOSED = 0x1
 
@@ -358,8 +366,7 @@ func (this *SVGPath) __construct() {
 	this.text = array()
 	this.ticks = array()
 	this.Flags = 0
-	this.name = SVGPath_id
-	SVGPath_id++
+	this.name = SVGPath_id()
 }
 
 /*
@@ -412,7 +419,7 @@ func (this *SVGPath) PopPoint() {
 }
 
 // FIXME(akavel): func (this *SVGPath) AddPoint(X, Y, Flags = Point_POINT) {
-func (this *SVGPath) AddPoint(X, Y, Flags) {
+func (this *SVGPath) AddPoint(X, Y Coord, Flags Point_Flags) {
 	p = NewPoint(X, Y)
 
 	/*
@@ -455,13 +462,13 @@ func (this *SVGPath) GetPoints() {
  * and this depends on the orientation of the line. Due to the way the line
  * parser works, we may have to use an inverted representation.
  */
-func (this *SVGPath) AddMarker(X, Y, t) {
+func (this *SVGPath) AddMarker(X, Y Coord, t Point_Flags) {
 	p = NewPoint(X, Y)
 	p.Flags |= t
 	this.points = append(this.points, p)
 }
 
-func (this *SVGPath) AddTick(X, Y, t) {
+func (this *SVGPath) AddTick(X, Y Coord, t Point_Flags) {
 	p = NewPoint(X, Y)
 	p.Flags |= t
 	this.ticks = append(this.ticks, p)
@@ -474,7 +481,7 @@ func (this *SVGPath) IsClosed() {
 	return (this.Flags & SVGPath_CLOSED)
 }
 
-func (this *SVGPath) AddText(t) {
+func (this *SVGPath) AddText(t *SVGText) {
 	this.text = append(this.text, t)
 }
 
@@ -482,7 +489,7 @@ func (this *SVGPath) GetText() {
 	return this.text
 }
 
-func (this *SVGPath) SetID(id) {
+func (this *SVGPath) SetID(id string) {
 	this.name = str_replace(' ', '_', str_replace('"', '_', id))
 }
 
@@ -498,7 +505,7 @@ func (this *SVGPath) SetOptions(opt) {
 	this.options = array_merge(this.options, opt)
 }
 
-func (this *SVGPath) SetOption(opt, val) {
+func (this *SVGPath) SetOption(opt, val string) {
 	this.options[opt] = val
 }
 
@@ -935,8 +942,7 @@ func (this *SVGPath) Render() {
 
 		i = 0
 		for _, o := range object {
-			id = SVGPath_id
-			SVGPath_id++
+			id = SVGPath_id()
 			out += "\t<path id=\"path" + this.name + "\" d=\""
 
 			oW = o[`width`]
@@ -1070,8 +1076,7 @@ func (this *SVGPath) Render() {
 		path += 'Z'
 	}
 
-	id = SVGPath_id
-	SVGPath_id++
+	id = SVGPath_id()
 
 	/* Add markers if necessary. */
 	if startPoint.Flags & Point_SMARKER {
@@ -1139,10 +1144,10 @@ func (this *SVGPath) Render() {
  * Nothing really special here. Container for representing text bits.
  */
 type SVGText struct {
-	options
-	string
-	point
-	name
+	options map[string]string
+	string_ string
+	point   *Point
+	name    int
 }
 
 var SVGText_id = 0
@@ -1170,8 +1175,8 @@ func (this *SVGText) GetPoint() {
 	return this.point
 }
 
-func (this *SVGText) SetString(string) {
-	this.string = string
+func (this *SVGText) SetString(string_) {
+	this.string_ = string_
 }
 
 func (this *SVGText) Render() {
@@ -1180,10 +1185,10 @@ func (this *SVGText) Render() {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
 		}
-		out += "opt=\"val\" "
+		out += opt + "=\"" + val + "\" "
 	}
 	out += ">"
-	out += htmlentities(this.string)
+	out += htmlentities(this.string_)
 	out += "</text>\n"
 	return out
 }
