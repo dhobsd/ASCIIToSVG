@@ -1,4 +1,3 @@
-<?php
 /*
  * ASCIIToSVG.php: ASCII diagram . SVG art generator.
  * Copyright © 2012 Devon H. O'Dell <devon.odell@gmail.com>
@@ -28,10 +27,10 @@
  *
  */
 
-namespace org\dh0\a2s;
+package main
 
-include 'svg-path.lex.php';
-include 'colors.php';
+// include 'svg-path.lex.php';
+// include 'colors.php';
 
 /*
  * Scale is a singleton class that is instantiated to apply scale
@@ -39,20 +38,12 @@ include 'colors.php';
  * SVG's native scaling for this, but I'm not sure how yet.
  */
 type Scale struct {
-  var Scale_instance = nil;
-
   XScale;
   YScale;
-
-  func (this *Scale) __construct() {}
-  func (this *Scale) __clone() {}
-
+}
+  var Scale_instance = Scale{};
   func Scale_GetInstance() {
-    if (Scale_instance == nil) {
-      Scale_instance = NewScale();
-    }
-
-    return Scale_instance;
+    return Scale_instance
   }
 
   func (this *Scale) SetScale(x, y) {
@@ -60,7 +51,6 @@ type Scale struct {
     o.XScale = x;
     o.YScale = y;
   }
-}
 
 /*
  * CustomObjects allows users to create their own custom SVG paths and use
@@ -89,7 +79,6 @@ type Scale struct {
  * Note that the path parser isn't foolproof, mostly because PHP isn't the
  * greatest language ever for implementing a parser.
  */
-type CustomObjects struct {
   var CustomObjects_Objects = array();
 
   /*
@@ -102,8 +91,8 @@ type CustomObjects struct {
 
 
   func CustomObjects_LoadObjects() {
-    cacheFile = getenv('HOME') . '/.a2s/objcache';
-    dir = getenv('HOME') . '/.a2s/objects';
+    cacheFile = getenv("HOME") + "/.a2s/objcache";
+    dir = getenv("HOME") + "/.a2s/objects";
 
     if (is_callable(CustomObjects_LoadCacheFn)) {
       /*
@@ -228,7 +217,6 @@ type CustomObjects struct {
 
     return cmdArr;
   }
-}
 
 /*
  * All lines and polygons are represented as a series of point coordinates
