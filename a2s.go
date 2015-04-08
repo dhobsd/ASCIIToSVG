@@ -1385,7 +1385,7 @@ type ASCIIToSVG struct {
              *
              * so ignore adding a box that we've already added.
              */
-            for _, box := range this.svgObjects.GetGroup('boxes') {
+            for _, box := range this.svgObjects.GetGroup(`boxes`) {
               bP = box.GetPoints();
               pP = path.GetPoints();
               pPoints = count(pP);
@@ -1400,9 +1400,9 @@ type ASCIIToSVG struct {
               }
 
               /* Traverse the vertices of this Newbox... */
-              for (i = 0; i < pPoints; i++) {
+              for i := 0; i < pPoints; i++ {
                 /* ...and find them in this existing box. */
-                for (j = 0; j < pPoints; j++) {
+                for j := 0; j < pPoints; j++ {
                   if (pP[i].X == bP[j].X && pP[i].Y == bP[j].Y) {
                     shared++;
                   }
@@ -1419,14 +1419,14 @@ type ASCIIToSVG struct {
             if (skip == false) {
               /* Search for any references for styling this polygon; add it */
               if (this.BlurDropShadow) {
-                path.SetOption('filter', 'url(#dsFilter)');
+                path.SetOption(`filter`, `url(#dsFilter)`);
               } else {
-                path.SetOption('filter', 'url(#dsFilterNoBlur)');
+                path.SetOption(`filter`, `url(#dsFilterNoBlur)`);
               }
 
               name = this.findCommands(path);
 
-              if (name != '') {
+              if (name != ``) {
                 path.SetID(name);
               }
 
@@ -1442,7 +1442,7 @@ type ASCIIToSVG struct {
      * that they don't confuse the line parser. However, we don't remove any
      * corner characters because these might be shared by lines.
      */
-    for _, box := range this.svgObjects.GetGroup('boxes') {
+    for _, box := range this.svgObjects.GetGroup(`boxes`) {
       this.clearObject(box);
     }
 
@@ -1463,20 +1463,20 @@ type ASCIIToSVG struct {
    */
   func (this *ASCIIToSVG) parseLines() {
     /* Set standard line options */
-    this.svgObjects.PushGroup('lines');
-    this.svgObjects.SetOption('stroke', 'black');
-    this.svgObjects.SetOption('stroke-width', '2');
-    this.svgObjects.SetOption('fill', 'none');
+    this.svgObjects.PushGroup(`lines`);
+    this.svgObjects.SetOption(`stroke`, `black`);
+    this.svgObjects.SetOption(`stroke-width`, `2`);
+    this.svgObjects.SetOption(`fill`, `none`);
 
     /* The grid is not uniform, so we need to determine the longest row. */
     maxCols = 0;
     bound = count(this.grid);
-    for (r = 0; r < bound; r++) {
+    for r := 0; r < bound; r++ {
       maxCols = max(maxCols, count(this.grid[r]));
     }
 
-    for (c = 0; c < maxCols; c++) {
-      for (r = 0; r < bound; r++) {
+    for c := 0; c < maxCols; c++ {
+      for r := 0; r < bound; r++ {
         /* This gets set if we find a line-start here. */
         dir = false;
 
@@ -1560,7 +1560,7 @@ type ASCIIToSVG struct {
          * horizontal line.
          */
         case ':':
-          line.SetOption('stroke-dasharray', '5 5');
+          line.SetOption(`stroke-dasharray`, `5 5`);
           /* FALLTHROUGH */
         case '|':
           n = this.getChar(r-1, c);
@@ -1583,7 +1583,7 @@ type ASCIIToSVG struct {
          * mentally turn them 90 degrees clockwise.
          */
         case '=':
-          line.SetOption('stroke-dasharray', '5 5');
+          line.SetOption(`stroke-dasharray`, `5 5`);
           /* FALLTHROUGH */
         case '-':
           w = this.getChar(r, c-1);
@@ -1667,7 +1667,7 @@ type ASCIIToSVG struct {
         }
 
         /* It does actually save lines! */
-        if (dir !== false) {
+        if (dir != false) {
           rInc = 0; cInc = 0;
           if (!this.isMarker(char)) {
             line.AddPoint(c, r);
@@ -1734,9 +1734,9 @@ type ASCIIToSVG struct {
      * is a bug waiting to be filed, but whatever.
      */
     fSize = 0.95*o.YScale;
-    this.svgObjects.PushGroup('text');
-    this.svgObjects.SetOption('fill', 'black');
-    this.svgObjects.SetOption('style',
+    this.svgObjects.PushGroup(`text`);
+    this.svgObjects.SetOption(`fill`, `black`);
+    this.svgObjects.SetOption(`style`,
         "font-family:{this.FontFamily};font-size:{fSize}px");
 
     /*
@@ -1746,12 +1746,12 @@ type ASCIIToSVG struct {
      * Either way, this isn't UTF-8 safe (thanks, PHP!!!), so that'll require
      * thought regardless.
      */
-    boxes = this.svgObjects.GetGroup('boxes');
+    boxes = this.svgObjects.GetGroup(`boxes`);
     bound = count(boxes);
 
     for row, line := range this.grid {
       cols = count(line);
-      for (i = 0; i < cols; i++) {
+      for i := 0; i < cols; i++ {
         if (this.getChar(row, i) != ' ') {
           /* More magic numbers that probably need research. */
           t = NewSVGText(i - .6, row + 0.3);
@@ -1762,7 +1762,7 @@ type ASCIIToSVG struct {
           maxPoint = NewPoint(-1, -1);
           boxQueue = array();
 
-          for (j = 0; j < bound; j++) {
+          for j := 0; j < bound; j++ {
             if (boxes[j].HasPoint(tP.GridX, tP.GridY)) {
               boxPoints = boxes[j].GetPoints();
               boxTL = boxPoints[0];
@@ -1776,7 +1776,7 @@ type ASCIIToSVG struct {
               if (boxTL.Y > maxPoint.Y && boxTL.X > maxPoint.X) {
                 maxPoint.X = boxTL.X;
                 maxPoint.Y = boxTL.Y;
-                boxQueue[] = boxes[j];
+                boxQueue=append( boxQueue, boxes[j]);
               }
             }
           }
@@ -1786,18 +1786,18 @@ type ASCIIToSVG struct {
              * Work backwards through the boxes to find the box with the most
              * specific fill.
              */
-            for (j = count(boxQueue) - 1; j >= 0; j--) {
-              fill = boxQueue[j].GetOption('fill');
+             for j := count(boxQueue) - 1; j >= 0; j-- {
+              fill = boxQueue[j].GetOption(`fill`);
 
-              if (fill == 'none' || fill == nil) {
+              if (fill == `none` || fill == nil) {
                 continue;
               }
 
               if (substr(fill, 0, 1) != '#') {
-                if (!isset(GLOBALS['A2S_colors'][strtolower(fill)])) {
+                if (!isset(GLOBALS[`A2S_colors`][strtolower(fill)])) {
                   continue;
                 } else {
-                  fill = GLOBALS['A2S_colors'][strtolower(fill)];
+                  fill = GLOBALS[`A2S_colors`][strtolower(fill)];
                 }
               } else {
                 if (strlen(fill) != 4 && strlen(fill) != 7) {
@@ -1831,9 +1831,9 @@ type ASCIIToSVG struct {
 
                 if (bFill - bText < 125 || bDiff < 500) {
                   /* If black is too dark, white will work */
-                  t.SetOption('fill', '#fff');
+                  t.SetOption(`fill`, `#fff`);
                 } else {
-                  t.SetOption('fill', '#000');
+                  t.SetOption(`fill`, `#000`);
                 }
 
                 break;
@@ -1841,17 +1841,19 @@ type ASCIIToSVG struct {
             }
 
             if (j < 0) {
-              t.SetOption('fill', '#000');
+              t.SetOption(`fill`, `#000`);
             }
           } else {
             /* This text isn't inside a box; make it black */
-            t.SetOption('fill', '#000');
+            t.SetOption(`fill`, `#000`);
           }
 
           /* We found a stringy character, eat it and the rest. */
-          str = this.getChar(row, i++);
-          while (i < count(line) && this.getChar(row, i) != ' ') {
-            str += this.getChar(row, i++);
+          str = this.getChar(row, i);
+          i++
+          for (i < count(line) && this.getChar(row, i) != ' ') {
+            str += this.getChar(row, i);
+            i++
             /* Eat up to 1 space */
             if (this.getChar(row, i) == ' ') {
               str += ' ';
@@ -1859,7 +1861,7 @@ type ASCIIToSVG struct {
             }
           }
 
-          if (str == '') {
+          if (str == ``) {
             continue;
           }
 
@@ -1870,8 +1872,8 @@ type ASCIIToSVG struct {
            * own group.
            */
           if (count(boxQueue) > 0) {
-            t.SetOption('stroke', 'none');
-            t.SetOption('style',
+            t.SetOption(`stroke`, `none`);
+            t.SetOption(`style`,
               "font-family:{this.FontFamily};font-size:{fSize}px");
             boxQueue[count(boxQueue) - 1].AddText(t);
           } else {
@@ -1887,9 +1889,9 @@ type ASCIIToSVG struct {
    * (ROW,COL). This allows styling of lines, boxes, or any text object.
    */
   func (this *ASCIIToSVG) injectCommands() {
-    boxes = this.svgObjects.GetGroup('boxes');
-    lines = this.svgObjects.GetGroup('lines');
-    text = this.svgObjects.GetGroup('text');
+    boxes = this.svgObjects.GetGroup(`boxes`);
+    lines = this.svgObjects.GetGroup(`lines`);
+    text = this.svgObjects.GetGroup(`text`);
 
     for _, obj := range boxes {
       objPoints = obj.GetPoints();
@@ -1934,31 +1936,45 @@ type ASCIIToSVG struct {
    * sure that there are ways to formulate lines to screw this walker up,
    * but it does a good enough job right now.
    */
-  func (this *ASCIIToSVG) walk(path, row, col, dir, d = 0) {
+   // FIXME(akavel): func (this *ASCIIToSVG) walk(path, row, col, dir, d = 0) {
+  func (this *ASCIIToSVG) walk(path, row, col, dir, d) {
     d++;
     r = row;
     c = col;
 
     if (dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT) {
-      cInc = (dir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
+      cInc = -1;
+      if (dir == ASCIIToSVG_DIR_RIGHT) {
+      cInc = 1 
+    }
       rInc = 0;
     } else if (dir == ASCIIToSVG_DIR_DOWN || dir == ASCIIToSVG_DIR_UP) {
       cInc = 0;
-      rInc = (dir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
+      rInc = -1;
+      if (dir == ASCIIToSVG_DIR_DOWN) {
+      rInc = 1 
+    }
     } else if (dir == ASCIIToSVG_DIR_SE || dir == ASCIIToSVG_DIR_NE) {
       cInc = 1;
-      rInc = (dir == ASCIIToSVG_DIR_SE) ? 1 : -1;
+      rInc = -1;
+if (dir == ASCIIToSVG_DIR_SE) {
+      rInc = 1 
+    }
     }
 
     /* Follow the edge for as long as we can */
     cur = this.getChar(r, c);
-    while (this.isEdge(cur, dir)) {
+    for (this.isEdge(cur, dir)) {
       if (cur == ':' || cur == '=') {
-        path.SetOption('stroke-dasharray', '5 5');
+        path.SetOption(`stroke-dasharray`, `5 5`);
       }
 
       if (this.isTick(cur)) {
-        path.AddTick(c, r, (cur == 'o') ? Point_DOT : Point_TICK);
+        if (cur == 'o') {
+          path.AddTick(c, r,  Point_DOT );
+        }else {
+          path.AddTick(c, r,  Point_TICK);
+        }
         path.AddPoint(c, r);
       }
 
@@ -2051,20 +2067,27 @@ type ASCIIToSVG struct {
    * cannot be a valid polygon. It also maintains an internal list of points
    * it has already visited, and refuses to visit any point twice.
    */
-  func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket = array(), d = 0) {
+   // FIXME(akavel): func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket = array(), d = 0) {
+  func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket , d) {
     d++;
 
     if (dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT) {
-      cInc = (dir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
+      cInc =  -1;
+if(dir == ASCIIToSVG_DIR_RIGHT) {
+      cInc = 1 
+    }
       rInc = 0;
     } else if (dir == ASCIIToSVG_DIR_DOWN || dir == ASCIIToSVG_DIR_UP) {
       cInc = 0;
-      rInc = (dir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
+      rInc =  -1;
+if(dir == ASCIIToSVG_DIR_DOWN) {
+      rInc = 1 
+    }
     }
 
     /* Traverse the edge in whatever direction we are going. */
     cur = this.getChar(r, c);
-    while (this.isBoxEdge(cur, dir)) {
+    for (this.isBoxEdge(cur, dir)) {
       r += rInc;
       c += cInc;
       cur = this.getChar(r, c);
@@ -2157,11 +2180,17 @@ type ASCIIToSVG struct {
 
       if (newDir != false) {
         if (newDir == ASCIIToSVG_DIR_RIGHT || newDir == ASCIIToSVG_DIR_LEFT) {
-          cMod = (newDir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
+          cMod =  -1;
+if(newDir == ASCIIToSVG_DIR_RIGHT) {
+          cMod =  1 
+        }
           rMod = 0;
         } else if (newDir == ASCIIToSVG_DIR_DOWN || newDir == ASCIIToSVG_DIR_UP) {
           cMod = 0;
-          rMod = (newDir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
+          rMod =  -1;
+if(newDir == ASCIIToSVG_DIR_DOWN) {
+          rMod =  1
+        }
         }
 
         bucket[key] |= newDir;
@@ -2248,7 +2277,7 @@ type ASCIIToSVG struct {
     closed = obj.IsClosed();
 
     bound = count(points);
-    for (i = 0; i < bound; i++) {
+    for i := 0; i < bound; i++ {
       p = points[i];
 
       if (i == count(points) - 1) {
@@ -2266,13 +2295,13 @@ type ASCIIToSVG struct {
       if (nP != nil && p.GridX == nP.GridX) {
         /* ...traverse the vertical line from the minimum to maximum points */
         maxY = max(p.GridY, nP.GridY);
-        for (j = min(p.GridY, nP.GridY); j <= maxY; j++) {
+        for j := min(p.GridY, nP.GridY); j <= maxY; j++ {
           char = this.getChar(j, p.GridX);
 
           if (!this.isTick(char) && this.isEdge(char) || this.isMarker(char)) {
             this.grid[j][p.GridX] = ' ';
           } else if (this.isCorner(char)) {
-            this.clearCorners[] = array(j, p.GridX);
+            this.clearCorners=append( this.clearCorners, array(j, p.GridX));
           } else if (this.isTick(char)) {
             this.grid[j][p.GridX] = '+';
           }
@@ -2280,13 +2309,13 @@ type ASCIIToSVG struct {
       } else if (nP != nil && p.GridY == nP.GridY) {
         /* Same horizontal plane; traverse from min to max point */
         maxX = max(p.GridX, nP.GridX);
-        for (j = min(p.GridX, nP.GridX); j <= maxX; j++) {
+        for j := min(p.GridX, nP.GridX); j <= maxX; j++ {
           char = this.getChar(p.GridY, j);
 
           if (!this.isTick(char) && this.isEdge(char) || this.isMarker(char)) {
             this.grid[p.GridY][j] = ' ';
           } else if (this.isCorner(char)) {
-            this.clearCorners[] = array(p.GridY, j);
+            this.clearCorners=append( this.clearCorners, array(p.GridY, j));
           } else if (this.isTick(char)) {
             this.grid[p.GridY][j] = '+';
           }
@@ -2302,17 +2331,21 @@ type ASCIIToSVG struct {
          */
         c = p.GridX;
         r = p.GridY;
-        rInc = (p.GridY > nP.GridY) ? -1 : 1;
+        rInc =  1;
+if(p.GridY > nP.GridY) {
+        rInc =  -1 
+      }
         bound = max(p.GridY, nP.GridY) - min(p.GridY, nP.GridY);
 
         /*
          * This looks like an off-by-one, but it is not. This clears the
          * corner, if one exists.
          */
-        for (j = 0; j <= bound; j++) {
+         for j := 0; j <= bound; j++ {
           char = this.getChar(r, c);
           if (char == '/' || char == "\\" || this.isMarker(char)) {
-            this.grid[r][c++] = ' ';
+            this.grid[r][c] = ' ';
+            c++
           } else if (this.isCorner(char)) {
             this.clearCorners[] = array(r, c++);
           } else if (this.isTick(char)) {
