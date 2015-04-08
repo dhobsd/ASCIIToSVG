@@ -891,7 +891,7 @@ func (this *SVGPath) Render() {
 	startPoint = array_shift(this.points)
 	endPoint = this.points[count(this.points)-1]
 
-	out = "<g id=\"group{this.name}\">\n"
+	out = "<g id=\"group" + this.name + "\">\n"
 
 	/*
 	 * If someone has specified one of our special object types, we are going
@@ -992,9 +992,9 @@ func (this *SVGPath) Render() {
 		eX = startPoint.X + 10
 		eY = startPoint.Y
 
-		path = "M {sX} {sY} Q {cX} {cY} {eX} {eY} "
+		path = "M " + sX + " " + sY + " Q " + cX + " " + cY + " " + eX + " " + eY + " "
 	} else {
-		path = "M {startPoint.X} {startPoint.Y} "
+		path = "M " + startPoint.X + " " + startPoint.Y + " "
 	}
 
 	prevP = startPoint
@@ -1057,10 +1057,10 @@ func (this *SVGPath) Render() {
 				}
 			}
 
-			path += "L {sX} {sY} Q {cX} {cY} {eX} {eY} "
+			path += "L " + sX + " " + sY + " Q " + cX + " " + cY + " " + eX + " " + eY + " "
 		} else {
 			/* The excruciating difficulty of drawing a straight line */
-			path += "L {p.X} {p.Y} "
+			path += "L " + p.X + " " + p.Y + " "
 		}
 
 		prevP = p
@@ -1095,14 +1095,14 @@ func (this *SVGPath) Render() {
 		this.options[`fill`] = `#fff`
 	}
 
-	out += "\t<path id=\"path{this.name}\" "
+	out += "\t<path id=\"path" + this.name + "\" "
 	for opt, val := range this.options {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
 		}
 		out += "opt=\"val\" "
 	}
-	out += "d=\"{path}\" />\n"
+	out += "d=\"" + path + "\" />\n"
 
 	if count(this.text) > 0 {
 		for _, text := range this.text {
@@ -1115,7 +1115,7 @@ func (this *SVGPath) Render() {
 	for i := 0; i < bound; i++ {
 		t = this.ticks[i]
 		if t.Flags & Point_DOT {
-			out += "<circle cx=\"{t.X}\" cy=\"{t.Y}\" r=\"3\" fill=\"black\" />"
+			out += "<circle cx=\"" + t.X + "\" cy=\"" + t.Y + "\" r=\"3\" fill=\"black\" />"
 		} else if t.Flags & Point_TICK {
 			x1 = t.X - 4
 			y1 = t.Y - 4
@@ -1175,7 +1175,7 @@ func (this *SVGText) SetString(string) {
 }
 
 func (this *SVGText) Render() {
-	out = "<text X=\"{this.point.X}\" Y=\"{this.point.Y}\" id=\"text{this.name}\" "
+	out = "<text X=\"" + this.point.X + "\" Y=\"" + this.point.Y + "\" id=\"text" + this.name + "\" "
 	for opt, val := range this.options {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
@@ -1286,7 +1286,7 @@ func (this *ASCIIToSVG) Render() {
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Created with ASCIIToSVG (http://9vx.org/~dho/a2s/) -.
-<svg width="{canvasWidth}px" height="{canvasHeight}px" version="1.1"
+<svg width="` + canvasWidth + `px" height="` + canvasHeight + `px" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <filter id="dsFilterNoBlur" width="150%" height="150%">
@@ -1756,7 +1756,7 @@ func (this *ASCIIToSVG) parseText() {
 	this.svgObjects.PushGroup(`text`)
 	this.svgObjects.SetOption(`fill`, `black`)
 	this.svgObjects.SetOption(`style`,
-		"font-family:{this.FontFamily};font-size:{fSize}px")
+		"font-family:"+this.FontFamily+";font-size:"+fSize+"px")
 
 	/*
 	 * Text gets the same scanning treatment as boxes. We do left-to-right
@@ -1892,7 +1892,7 @@ func (this *ASCIIToSVG) parseText() {
 				if count(boxQueue) > 0 {
 					t.SetOption(`stroke`, `none`)
 					t.SetOption(`style`,
-						"font-family:{this.FontFamily};font-size:{fSize}px")
+						"font-family:"+this.FontFamily+";font-size:"+fSize+"px")
 					boxQueue[count(boxQueue)-1].AddText(t)
 				} else {
 					this.svgObjects.AddObject(t)
@@ -1913,7 +1913,7 @@ func (this *ASCIIToSVG) injectCommands() {
 
 	for _, obj := range boxes {
 		objPoints = obj.GetPoints()
-		pointCmd = "{objPoints[0].GridY},{objPoints[0].GridX}"
+		pointCmd = "" + objPoints[0].GridY + "," + objPoints[0].GridX + ""
 
 		if isset(this.commands[pointCmd]) {
 			obj.SetOptions(this.commands[pointCmd])
@@ -1921,7 +1921,7 @@ func (this *ASCIIToSVG) injectCommands() {
 
 		for _, text := range obj.GetText() {
 			textPoint = text.GetPoint()
-			pointCmd = "{textPoint.GridY},{textPoint.GridX}"
+			pointCmd = "" + textPoint.GridY + "," + textPoint.GridX + ""
 
 			if isset(this.commands[pointCmd]) {
 				text.SetOptions(this.commands[pointCmd])
@@ -1931,7 +1931,7 @@ func (this *ASCIIToSVG) injectCommands() {
 
 	for _, obj := range lines {
 		objPoints = obj.GetPoints()
-		pointCmd = "{objPoints[0].GridY},{objPoints[0].GridX}"
+		pointCmd = "" + objPoints[0].GridY + "," + objPoints[0].GridX + ""
 
 		if isset(this.commands[pointCmd]) {
 			obj.SetOptions(this.commands[pointCmd])
@@ -1940,7 +1940,7 @@ func (this *ASCIIToSVG) injectCommands() {
 
 	for _, obj := range text {
 		objPoint = obj.GetPoint()
-		pointCmd = "{objPoint.GridY},{objPoint.GridX}"
+		pointCmd = "" + objPoint.GridY + "," + objPoint.GridX + ""
 
 		if isset(this.commands[pointCmd]) {
 			obj.SetOptions(this.commands[pointCmd])
@@ -2112,7 +2112,7 @@ func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket, d) {
 	}
 
 	/* We 'key' our location by catting r and c together */
-	key = "{r}{c}"
+	key = "" + r + "" + c + ""
 	if isset(bucket[key]) {
 		return
 	}
