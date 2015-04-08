@@ -34,7 +34,7 @@ import "fmt"
 // include 'svg-path.lex.php';
 // include 'colors.php';
 
-type Coord int
+type Coord float32
 
 /*
  * Scale is a singleton class that is instantiated to apply scale
@@ -48,12 +48,12 @@ type Scale struct {
 
 var Scale_instance = Scale{}
 
-func Scale_GetInstance() {
-	return Scale_instance
+func Scale_GetInstance() *Scale {
+	return &Scale_instance
 }
 
 func (this *Scale) SetScale(x, y Coord) {
-	o = Scale_GetInstance()
+	o := Scale_GetInstance()
 	o.XScale = x
 	o.YScale = y
 }
@@ -85,15 +85,17 @@ func (this *Scale) SetScale(x, y Coord) {
  * Note that the path parser isn't foolproof, mostly because PHP isn't the
  * greatest language ever for implementing a parser.
  */
-var CustomObjects_Objects = array()
+type CustomObjectsType []struct{}
+
+var CustomObjects_Objects = CustomObjectsType{}
 
 /*
  * Closures / callable function names / whatever for integrating non-default
  * loading and storage functionality.
  */
-var CustomObjects_LoadCacheFn = nil
-var CustomObjects_StorCacheFn = nil
-var CustomObjects_LoadObjsFn = nil
+var CustomObjects_LoadCacheFn func() CustomObjectsType = nil
+var CustomObjects_StorCacheFn func(CustomObjectsType) = nil
+var CustomObjects_LoadObjsFn func() CustomObjectsType = nil // TODO(akavel): ?
 
 func CustomObjects_LoadObjects() {
 	cacheFile = getenv("HOME") + "/.a2s/objcache"
@@ -501,7 +503,7 @@ func (this *SVGPath) GetID() {
  * Set options as a JSON string. Specified as a merge operation so that it
  * can be called after an individual SetOption call.
  */
-func (this *SVGPath) SetOptions(opt) {
+func (this *SVGPath) SetOptions(opt map[string]string) {
 	this.options = array_merge(this.options, opt)
 }
 
@@ -509,7 +511,7 @@ func (this *SVGPath) SetOption(opt, val string) {
 	this.options[opt] = val
 }
 
-func (this *SVGPath) GetOption(opt) {
+func (this *SVGPath) GetOption(opt string) {
 	if isset(this.options[opt]) {
 		return this.options[opt]
 	}
@@ -523,7 +525,7 @@ func (this *SVGPath) GetOption(opt) {
  * same shape, we need to do a full point-in-polygon test. This algorithm
  * seems like the standard one. See: http://alienryderflex.com/polygon/
  */
-func (this *SVGPath) HasPoint(X, Y) {
+func (this *SVGPath) HasPoint(X, Y Coord) {
 	if this.IsClosed() == false {
 		return false
 	}
@@ -548,6 +550,8 @@ func (this *SVGPath) HasPoint(X, Y) {
 	return oddNodes
 }
 
+type Matrix [][]Coord
+
 /*
  * Apply a matrix transformation to the coordinates (X, Y). The
  * multiplication is implemented on the matrices:
@@ -561,7 +565,7 @@ func (this *SVGPath) HasPoint(X, Y) {
  *
  * http://www.w3.org/TR/SVG/coords.html#TransformMatrixDefined
  */
-func (this *SVGPath) matrixTransform(matrix, X, Y) {
+func (this *SVGPath) matrixTransform(matrix Matrix, X, Y Coord) {
 	xyMat = array(array(X), array(Y), array(1))
 	newXY = array(array())
 
@@ -585,7 +589,7 @@ func (this *SVGPath) matrixTransform(matrix, X, Y) {
  * Translate the X and Y coordinates. tX and tY specify the distance to
  * transform.
  */
-func (this *SVGPath) translateTransform(tX, tY, X, Y) {
+func (this *SVGPath) translateTransform(tX, tY, X, Y Coord) {
 	matrix = array(array(1, 0, tX), array(0, 1, tY), array(0, 0, 1))
 	return this.matrixTransform(matrix, X, Y)
 }
@@ -596,7 +600,7 @@ func (this *SVGPath) translateTransform(tX, tY, X, Y) {
  * in the old system. Thus, if you want to double the size of an object on
  * both axes, you sould call scaleTransform(0.5, 0.5, X, Y)
  */
-func (this *SVGPath) scaleTransform(sX, sY, X, Y) {
+func (this *SVGPath) scaleTransform(sX, sY, X, Y Coord) {
 	matrix = array(array(sX, 0, 0), array(0, sY, 0), array(0, 0, 1))
 	return this.matrixTransform(matrix, X, Y)
 }
@@ -607,7 +611,7 @@ func (this *SVGPath) scaleTransform(sX, sY, X, Y) {
  * is specified in degrees.
  */
 // FIXME(akavel): func (this *SVGPath) rotateTransform(angle, X, Y, cX = 0, cY = 0) {
-func (this *SVGPath) rotateTransform(angle, X, Y, cX, cY) {
+func (this *SVGPath) rotateTransform(angle float32, X, Y, cX, cY Coord) {
 	angle = angle * (pi() / 180)
 	if cX != 0 || cY != 0 {
 		list(X, Y) = this.translateTransform(cX, cY, X, Y)
@@ -631,7 +635,7 @@ func (this *SVGPath) rotateTransform(angle, X, Y, cX, cY) {
  * Skews along the X axis at specified angle. The angle is specified in
  * degrees.
  */
-func (this *SVGPath) skewXTransform(angle, X, Y) {
+func (this *SVGPath) skewXTransform(angle float32, X, Y Coord) {
 	angle = angle * (pi() / 180)
 	matrix = array(array(1, tan(angle), 0), array(0, 1, 0), array(0, 0, 1))
 	return this.matrixTransform(matrix, X, Y)
@@ -641,7 +645,7 @@ func (this *SVGPath) skewXTransform(angle, X, Y) {
  * Skews along the Y axis at specified angle. The angle is specified in
  * degrees.
  */
-func (this *SVGPath) skewYTransform(angle, X, Y) {
+func (this *SVGPath) skewYTransform(angle float32, X, Y Coord) {
 	angle = angle * (pi() / 180)
 	matrix = array(array(1, 0, 0), array(tan(angle), 1, 0), array(0, 0, 1))
 	return this.matrixTransform(matrix, X, Y)
@@ -650,7 +654,7 @@ func (this *SVGPath) skewYTransform(angle, X, Y) {
 /*
  * Apply a transformation to a point p.
  */
-func (this *SVGPath) applyTransformToPoint(txf, p, args) {
+func (this *SVGPath) applyTransformToPoint(txf string, p Point, args []float32) {
 	switch txf {
 	case `translate`:
 		return this.translateTransform(args[0], args[1], p.X, p.Y)
@@ -677,7 +681,7 @@ func (this *SVGPath) applyTransformToPoint(txf, p, args) {
  * Apply the transformation function txf to all coordinates on path p
  * providing args as arguments to the transformation function.
  */
-func (this *SVGPath) applyTransformToPath(txf, *p, args) {
+func (this *SVGPath) applyTransformToPath(txf string, p *map[string][]string, args []float32) {
 	pathCmds = count(p[`path`])
 	curPoint = NewPoint(0, 0)
 	prevType = nil
@@ -1147,23 +1151,24 @@ type SVGText struct {
 	options map[string]string
 	string_ string
 	point   *Point
-	name    int
+	name    string
 }
 
 var SVGText_id = 0
 
-func (this *SVGText) __construct(X, Y) {
+func NewSVGText(X, Y Coord) *SVGText {
+	this := &SVGText{}
 	this.point = NewPoint(X, Y)
-	this.name = SVGText_id
-	SVGText_id++
+	this.name = SVGText_id()
 	this.options = array()
+	return this
 }
 
-func (this *SVGText) SetOption(opt, val) {
+func (this *SVGText) SetOption(opt, val string) {
 	this.options[opt] = val
 }
 
-func (this *SVGText) SetID(id) {
+func (this *SVGText) SetID(id string) {
 	this.name = str_replace(' ', '_', str_replace('"', '_', id))
 }
 
@@ -1175,7 +1180,7 @@ func (this *SVGText) GetPoint() {
 	return this.point
 }
 
-func (this *SVGText) SetString(string_) {
+func (this *SVGText) SetString(string_ string) {
 	this.string_ = string_
 }
 
@@ -1201,22 +1206,24 @@ type ASCIIToSVG struct {
 	// FIXME(akavel): BlurDropShadow = true;
 	// FIXME(akavel): FontFamily = "Consolas,Monaco,Anonymous Pro,Anonymous,Bitstream Sans Mono,monospace";
 
-	rawData
-	grid
+	rawData []byte
+	grid    [][]rune
 
-	svgObjects
-	clearCorners
+	svgObjects   *SVGGroup
+	clearCorners [][2]int
 }
 
 /* Directions for traversing lines in our grid */
-const DIR_UP = 0x1
-const DIR_DOWN = 0x2
-const DIR_LEFT = 0x4
-const DIR_RIGHT = 0x8
-const DIR_NE = 0x10
-const DIR_SE = 0x20
+type ASCIIToSVG_DIR int
 
-func (this *ASCIIToSVG) __construct(data) {
+const ASCIIToSVG_DIR_UP ASCIIToSVG_DIR = 0x1
+const ASCIIToSVG_DIR_DOWN ASCIIToSVG_DIR = 0x2
+const ASCIIToSVG_DIR_LEFT ASCIIToSVG_DIR = 0x4
+const ASCIIToSVG_DIR_RIGHT ASCIIToSVG_DIR = 0x8
+const ASCIIToSVG_DIR_NE ASCIIToSVG_DIR = 0x10
+const ASCIIToSVG_DIR_SE ASCIIToSVG_DIR = 0x20
+
+func (this *ASCIIToSVG) __construct(data []byte) {
 	/* For debugging purposes */
 	this.rawData = data
 
@@ -1258,7 +1265,7 @@ func (this *ASCIIToSVG) __construct(data) {
  * This is kind of a stupid and hacky way to do this, but this allows setting
  * the default scale of one grid space on the X and Y axes.
  */
-func (this *ASCIIToSVG) SetDimensionScale(X, Y) {
+func (this *ASCIIToSVG) SetDimensionScale(X, Y Coord) {
 	o = Scale_GetInstance()
 	o.SetScale(X, Y)
 }
@@ -1960,7 +1967,7 @@ func (this *ASCIIToSVG) injectCommands() {
  * but it does a good enough job right now.
  */
 // FIXME(akavel): func (this *ASCIIToSVG) walk(path, row, col, dir, d = 0) {
-func (this *ASCIIToSVG) walk(path, row, col, dir, d) {
+func (this *ASCIIToSVG) walk(path *SVGPath, row, col int, dir ASCIIToSVG_DIR, d int) {
 	d++
 	r = row
 	c = col
@@ -2091,7 +2098,7 @@ func (this *ASCIIToSVG) walk(path, row, col, dir, d) {
  * it has already visited, and refuses to visit any point twice.
  */
 // FIXME(akavel): func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket = array(), d = 0) {
-func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket, d) {
+func (this *ASCIIToSVG) wallFollow(path *SVGPath, r, c int, dir ASCIIToSVG_DIR, bucket map[string]int, d int) {
 	d++
 
 	if dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT {
@@ -2295,7 +2302,7 @@ func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket, d) {
  * function retains corners in "clearCorners" to be cleaned up before we do
  * text parsing.
  */
-func (this *ASCIIToSVG) clearObject(obj) {
+func (this *ASCIIToSVG) clearObject(obj *SVGPath) {
 	points = obj.GetPoints()
 	closed = obj.IsClosed()
 
@@ -2392,7 +2399,7 @@ func (this *ASCIIToSVG) clearObject(obj) {
  * gives you a good method for specifying *tons* of information about the
  * object.
  */
-func (this *ASCIIToSVG) findCommands(box) {
+func (this *ASCIIToSVG) findCommands(box *SVGPath) {
 	points = box.GetPoints()
 	sX = points[0].GridX + 1
 	sY = points[0].GridY + 1
@@ -2451,16 +2458,16 @@ func (this *ASCIIToSVG) dumpGrid() {
 	}
 }
 
-func (this *ASCIIToSVG) getChar(row, col) {
+func (this *ASCIIToSVG) getChar(row, col int) rune {
 	if isset(this.grid[row][col]) {
 		return this.grid[row][col]
 	}
 
-	return nil
+	return 0
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
-func (this *ASCIIToSVG) isBoxEdge(char, dir) {
+func (this *ASCIIToSVG) isBoxEdge(char rune, dir ASCIIToSVG_DIR) {
 	if dir == nil {
 		return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+'
 	} else if dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN {
@@ -2471,7 +2478,7 @@ func (this *ASCIIToSVG) isBoxEdge(char, dir) {
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isEdge(char, dir = nil) {
-func (this *ASCIIToSVG) isEdge(char, dir) {
+func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) {
 	if char == 'o' || char == 'X' {
 		return true
 	}
@@ -2489,19 +2496,19 @@ func (this *ASCIIToSVG) isEdge(char, dir) {
 	}
 }
 
-func (this *ASCIIToSVG) isBoxCorner(char) {
+func (this *ASCIIToSVG) isBoxCorner(char rune) {
 	return char == '.' || char == "'" || char == '#'
 }
 
-func (this *ASCIIToSVG) isCorner(char) {
+func (this *ASCIIToSVG) isCorner(char rune) {
 	return char == '.' || char == "'" || char == '#' || char == '+'
 }
 
-func (this *ASCIIToSVG) isMarker(char) {
+func (this *ASCIIToSVG) isMarker(char rune) {
 	return char == 'v' || char == '^' || char == '<' || char == '>'
 }
 
-func (this *ASCIIToSVG) isTick(char) {
+func (this *ASCIIToSVG) isTick(char rune) {
 	return char == 'o' || char == 'X'
 }
 
