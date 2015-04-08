@@ -1498,48 +1498,48 @@ type ASCIIToSVG struct {
          */
         case '<':
           e = this.getChar(r, c + 1);
-          if (this.isEdge(e, ASCIIToSVG::DIR_RIGHT) || this.isCorner(e)) {
+          if (this.isEdge(e, ASCIIToSVG_DIR_RIGHT) || this.isCorner(e)) {
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_RIGHT;
+            dir = ASCIIToSVG_DIR_RIGHT;
           } else {
             se = this.getChar(r + 1, c + 1);
             ne = this.getChar(r - 1, c + 1);
             if (se == "\\") {
               line.AddMarker(c, r, Point_IMARKER);
-              dir = ASCIIToSVG::DIR_SE;
+              dir = ASCIIToSVG_DIR_SE;
             } else if (ne == '/') {
               line.AddMarker(c, r, Point_IMARKER);
-              dir = ASCIIToSVG::DIR_NE;
+              dir = ASCIIToSVG_DIR_NE;
             }
           }
           break;
         case '^':
           s = this.getChar(r + 1, c);
-          if (this.isEdge(s, ASCIIToSVG::DIR_DOWN) || this.isCorner(s)) { 
+          if (this.isEdge(s, ASCIIToSVG_DIR_DOWN) || this.isCorner(s)) { 
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_DOWN;
+            dir = ASCIIToSVG_DIR_DOWN;
           } else if (this.getChar(r + 1, c + 1) == "\\") {
             /* Don't need to check west for diagonals. */
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_SE;
+            dir = ASCIIToSVG_DIR_SE;
           }
           break;
         case '>':
           w = this.getChar(r, c - 1);
-          if (this.isEdge(w, ASCIIToSVG::DIR_LEFT) || this.isCorner(w)) {
+          if (this.isEdge(w, ASCIIToSVG_DIR_LEFT) || this.isCorner(w)) {
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_LEFT;
+            dir = ASCIIToSVG_DIR_LEFT;
           }
           /* All diagonals come from west, so we don't need to check */
           break;
         case 'v':
           n = this.getChar(r - 1, c);
-          if (this.isEdge(n, ASCIIToSVG::DIR_UP) || this.isCorner(n)) {
+          if (this.isEdge(n, ASCIIToSVG_DIR_UP) || this.isCorner(n)) {
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_UP;
+            dir = ASCIIToSVG_DIR_UP;
           } else if (this.getChar(r - 1, c + 1) == '/') {
             line.AddMarker(c, r, Point_IMARKER);
-            dir = ASCIIToSVG::DIR_NE;
+            dir = ASCIIToSVG_DIR_NE;
           }
           break;
 
@@ -1568,11 +1568,11 @@ type ASCIIToSVG struct {
           if ((s == '|' || s == ':' || this.isCorner(s)) &&
               n != '|' && n != ':' && !this.isCorner(n) &&
               n != '^') {
-            dir = ASCIIToSVG::DIR_DOWN;
+            dir = ASCIIToSVG_DIR_DOWN;
           } else if ((n == '|' || n == ':' || this.isCorner(n)) &&
                     s != '|' && s != ':' && !this.isCorner(s) &&
                     s != 'v') {
-            dir = ASCIIToSVG::DIR_UP;
+            dir = ASCIIToSVG_DIR_UP;
           }
           break;
 
@@ -1591,11 +1591,11 @@ type ASCIIToSVG struct {
           if ((w == '-' || w == '=' || this.isCorner(w)) &&
               e != '=' && e != '-' && !this.isCorner(e) &&
               e != '>') {
-            dir = ASCIIToSVG::DIR_LEFT;
+            dir = ASCIIToSVG_DIR_LEFT;
           } else if ((e == '-' || e == '=' || this.isCorner(e)) &&
                     w != '=' && w != '-' && !this.isCorner(w) &&
                     w != '<') {
-            dir = ASCIIToSVG::DIR_RIGHT;
+            dir = ASCIIToSVG_DIR_RIGHT;
           }
           break;
 
@@ -1608,14 +1608,14 @@ type ASCIIToSVG struct {
         case '/':
           ne = this.getChar(r-1, c+1);
           if (ne == '/' || ne == '^' || ne == '>') {
-            dir = ASCIIToSVG::DIR_NE;
+            dir = ASCIIToSVG_DIR_NE;
           }
           break;
 
         case "\\":
           se =  this.getChar(r+1, c+1);
           if (se == "\\" || se == "v" || se == '>') {
-            dir = ASCIIToSVG::DIR_SE;
+            dir = ASCIIToSVG_DIR_SE;
           }
           break;
 
@@ -1632,9 +1632,9 @@ type ASCIIToSVG struct {
           ne = this.getChar(r-1, c+1);
           se =  this.getChar(r+1, c+1);
           if (ne == '/' || ne == '^' || ne == '>') {
-            dir = ASCIIToSVG::DIR_NE;
+            dir = ASCIIToSVG_DIR_NE;
           } else if (se == "\\" || se == "v" || se == '>') {
-            dir = ASCIIToSVG::DIR_SE;
+            dir = ASCIIToSVG_DIR_SE;
           }
           /* FALLTHROUGH */
 
@@ -1646,22 +1646,22 @@ type ASCIIToSVG struct {
           e = this.getChar(r, c+1);
           if ((w == '=' || w == '-') && n != '|' && n != ':' && w != '-' &&
               e != '=' && e != '|' && s != ':') {
-            dir = ASCIIToSVG::DIR_LEFT;
+            dir = ASCIIToSVG_DIR_LEFT;
           } else if ((e == '=' || e == '-') && n != '|' && n != ':' && 
               w != '-' && w != '=' && s != '|' && s != ':') {
-            dir = ASCIIToSVG::DIR_RIGHT;
+            dir = ASCIIToSVG_DIR_RIGHT;
           } else if ((s == '|' || s == ':') && n != '|' && n != ':' &&
                     w != '-' && w != '=' && e != '-' && e != '=' &&
                     ((char != '.' && char != "'") || 
                      (char == '.' && s != '.') || 
                      (char == "'" && s != "'"))) {
-            dir = ASCIIToSVG::DIR_DOWN;
+            dir = ASCIIToSVG_DIR_DOWN;
           } else if ((n == '|' || n == ':') && s != '|' && s != ':' &&
                     w != '-' && w != '=' && e != '-' && e != '=' &&
                     ((char != '.' && char != "'") || 
                      (char == '.' && s != '.') || 
                      (char == "'" && s != "'"))) {
-            dir = ASCIIToSVG::DIR_UP;
+            dir = ASCIIToSVG_DIR_UP;
           }
           break;
         }
@@ -1677,17 +1677,17 @@ type ASCIIToSVG struct {
            * The walk routine may attempt to add the point again, so skip it.
            * If we don't, we can miss the line or end up with just a point.
            */
-          if (dir == ASCIIToSVG::DIR_UP) {
+          if (dir == ASCIIToSVG_DIR_UP) {
             rInc = -1; cInc = 0;
-          } else if (dir == ASCIIToSVG::DIR_DOWN) {
+          } else if (dir == ASCIIToSVG_DIR_DOWN) {
             rInc = 1; cInc = 0;
-          } else if (dir == ASCIIToSVG::DIR_RIGHT) {
+          } else if (dir == ASCIIToSVG_DIR_RIGHT) {
             rInc = 0; cInc = 1;
-          } else if (dir == ASCIIToSVG::DIR_LEFT) {
+          } else if (dir == ASCIIToSVG_DIR_LEFT) {
             rInc = 0; cInc = -1;
-          } else if (dir == ASCIIToSVG::DIR_NE) {
+          } else if (dir == ASCIIToSVG_DIR_NE) {
             rInc = -1; cInc = 1;
-          } else if (dir == ASCIIToSVG::DIR_SE) {
+          } else if (dir == ASCIIToSVG_DIR_SE) {
             rInc = 1; cInc = 1;
           }
 
@@ -1939,15 +1939,15 @@ type ASCIIToSVG struct {
     r = row;
     c = col;
 
-    if (dir == ASCIIToSVG::DIR_RIGHT || dir == ASCIIToSVG::DIR_LEFT) {
-      cInc = (dir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
+    if (dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT) {
+      cInc = (dir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
       rInc = 0;
-    } else if (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
+    } else if (dir == ASCIIToSVG_DIR_DOWN || dir == ASCIIToSVG_DIR_UP) {
       cInc = 0;
-      rInc = (dir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
-    } else if (dir == ASCIIToSVG::DIR_SE || dir == ASCIIToSVG::DIR_NE) {
+      rInc = (dir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
+    } else if (dir == ASCIIToSVG_DIR_SE || dir == ASCIIToSVG_DIR_NE) {
       cInc = 1;
-      rInc = (dir == ASCIIToSVG::DIR_SE) ? 1 : -1;
+      rInc = (dir == ASCIIToSVG_DIR_SE) ? 1 : -1;
     }
 
     /* Follow the edge for as long as we can */
@@ -1995,32 +1995,32 @@ type ASCIIToSVG struct {
 
       if (this.isCorner(next) || this.isEdge(next, dir)) {
         return this.walk(path, r + rInc, c + cInc, dir, d);
-      } else if (dir != ASCIIToSVG::DIR_DOWN &&
-                (this.isCorner(n) || this.isEdge(n, ASCIIToSVG::DIR_UP))) {
+      } else if (dir != ASCIIToSVG_DIR_DOWN &&
+                (this.isCorner(n) || this.isEdge(n, ASCIIToSVG_DIR_UP))) {
         /* Can't turn up into bottom corner */
         if ((cur != '.' && cur != "'") || (cur == '.' && n != '.') ||
               (cur == "'" && n != "'")) {
-          return this.walk(path, r - 1, c, ASCIIToSVG::DIR_UP, d);
+          return this.walk(path, r - 1, c, ASCIIToSVG_DIR_UP, d);
         }
-      } else if (dir != ASCIIToSVG::DIR_UP && 
-                (this.isCorner(s) || this.isEdge(s, ASCIIToSVG::DIR_DOWN))) {
+      } else if (dir != ASCIIToSVG_DIR_UP && 
+                (this.isCorner(s) || this.isEdge(s, ASCIIToSVG_DIR_DOWN))) {
         /* Can't turn down into top corner */
         if ((cur != '.' && cur != "'") || (cur == '.' && s != '.') ||
               (cur == "'" && s != "'")) {
-          return this.walk(path, r + 1, c, ASCIIToSVG::DIR_DOWN, d);
+          return this.walk(path, r + 1, c, ASCIIToSVG_DIR_DOWN, d);
         }
-      } else if (dir != ASCIIToSVG::DIR_LEFT &&
-                (this.isCorner(e) || this.isEdge(e, ASCIIToSVG::DIR_RIGHT))) {
-        return this.walk(path, r, c + 1, ASCIIToSVG::DIR_RIGHT, d);
-      } else if (dir != ASCIIToSVG::DIR_RIGHT &&
-                (this.isCorner(w) || this.isEdge(w, ASCIIToSVG::DIR_LEFT))) {
-        return this.walk(path, r, c - 1, ASCIIToSVG::DIR_LEFT, d);
-      } else if (dir == ASCIIToSVG::DIR_SE &&
-                (this.isCorner(ne) || this.isEdge(ne, ASCIIToSVG::DIR_NE))) {
-        return this.walk(path, r - 1, c + 1, ASCIIToSVG::DIR_NE, d);
-      } else if (dir == ASCIIToSVG::DIR_NE &&
-                (this.isCorner(se) || this.isEdge(se, ASCIIToSVG::DIR_SE))) {
-        return this.walk(path, r + 1, c + 1, ASCIIToSVG::DIR_SE, d);
+      } else if (dir != ASCIIToSVG_DIR_LEFT &&
+                (this.isCorner(e) || this.isEdge(e, ASCIIToSVG_DIR_RIGHT))) {
+        return this.walk(path, r, c + 1, ASCIIToSVG_DIR_RIGHT, d);
+      } else if (dir != ASCIIToSVG_DIR_RIGHT &&
+                (this.isCorner(w) || this.isEdge(w, ASCIIToSVG_DIR_LEFT))) {
+        return this.walk(path, r, c - 1, ASCIIToSVG_DIR_LEFT, d);
+      } else if (dir == ASCIIToSVG_DIR_SE &&
+                (this.isCorner(ne) || this.isEdge(ne, ASCIIToSVG_DIR_NE))) {
+        return this.walk(path, r - 1, c + 1, ASCIIToSVG_DIR_NE, d);
+      } else if (dir == ASCIIToSVG_DIR_NE &&
+                (this.isCorner(se) || this.isEdge(se, ASCIIToSVG_DIR_SE))) {
+        return this.walk(path, r + 1, c + 1, ASCIIToSVG_DIR_SE, d);
       }
     } else if (this.isMarker(cur)) {
       /* We found a marker! Add it. */
@@ -2054,12 +2054,12 @@ type ASCIIToSVG struct {
   func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket = array(), d = 0) {
     d++;
 
-    if (dir == ASCIIToSVG::DIR_RIGHT || dir == ASCIIToSVG::DIR_LEFT) {
-      cInc = (dir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
+    if (dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT) {
+      cInc = (dir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
       rInc = 0;
-    } else if (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
+    } else if (dir == ASCIIToSVG_DIR_DOWN || dir == ASCIIToSVG_DIR_UP) {
       cInc = 0;
-      rInc = (dir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
+      rInc = (dir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
     }
 
     /* Traverse the edge in whatever direction we are going. */
@@ -2120,13 +2120,13 @@ type ASCIIToSVG struct {
       e = this.getChar(r, c + 1);
       w = this.getChar(r, c - 1);
 
-      if (dir == ASCIIToSVG::DIR_RIGHT) {
-        if (!(bucket[key] & ASCIIToSVG::DIR_DOWN) &&
-            (this.isBoxEdge(s, ASCIIToSVG::DIR_DOWN) || this.isBoxCorner(s))) {
+      if (dir == ASCIIToSVG_DIR_RIGHT) {
+        if (!(bucket[key] & ASCIIToSVG_DIR_DOWN) &&
+            (this.isBoxEdge(s, ASCIIToSVG_DIR_DOWN) || this.isBoxCorner(s))) {
           /* We can't turn into another top edge. */
           if ((cur != '.' && cur != "'") || (cur == '.' && s != '.') ||
               (cur == "'" && s != "'")) {
-            newDir = ASCIIToSVG::DIR_DOWN;
+            newDir = ASCIIToSVG_DIR_DOWN;
           }
         } else {
           /* There is no right hand turn for us; this isn't a valid start */
@@ -2134,34 +2134,34 @@ type ASCIIToSVG struct {
             return;
           }
         }
-      } else if (dir == ASCIIToSVG::DIR_DOWN) {
-        if (!(bucket[key] & ASCIIToSVG::DIR_LEFT) &&
-            (this.isBoxEdge(w, ASCIIToSVG::DIR_LEFT) || this.isBoxCorner(w))) {
-          newDir == ASCIIToSVG::DIR_LEFT;
+      } else if (dir == ASCIIToSVG_DIR_DOWN) {
+        if (!(bucket[key] & ASCIIToSVG_DIR_LEFT) &&
+            (this.isBoxEdge(w, ASCIIToSVG_DIR_LEFT) || this.isBoxCorner(w))) {
+          newDir == ASCIIToSVG_DIR_LEFT;
         } 
-      } else if (dir == ASCIIToSVG::DIR_LEFT) {
-        if (!(bucket[key] & ASCIIToSVG::DIR_UP) &&
-            (this.isBoxEdge(n, ASCIIToSVG::DIR_UP) || this.isBoxCorner(n))) {
+      } else if (dir == ASCIIToSVG_DIR_LEFT) {
+        if (!(bucket[key] & ASCIIToSVG_DIR_UP) &&
+            (this.isBoxEdge(n, ASCIIToSVG_DIR_UP) || this.isBoxCorner(n))) {
           /* We can't turn into another bottom edge. */
           if ((cur != '.' && cur != "'") || (cur == '.' && n != '.') ||
               (cur == "'" && n != "'")) {
-            newDir = ASCIIToSVG::DIR_UP;
+            newDir = ASCIIToSVG_DIR_UP;
           }
         } 
-      } else if (dir == ASCIIToSVG::DIR_UP) {
-        if (!(bucket[key] & ASCIIToSVG::DIR_RIGHT) &&
-            (this.isBoxEdge(e, ASCIIToSVG::DIR_RIGHT) || this.isBoxCorner(e))) {
-          newDir = ASCIIToSVG::DIR_RIGHT;
+      } else if (dir == ASCIIToSVG_DIR_UP) {
+        if (!(bucket[key] & ASCIIToSVG_DIR_RIGHT) &&
+            (this.isBoxEdge(e, ASCIIToSVG_DIR_RIGHT) || this.isBoxCorner(e))) {
+          newDir = ASCIIToSVG_DIR_RIGHT;
         } 
       }
 
       if (newDir != false) {
-        if (newDir == ASCIIToSVG::DIR_RIGHT || newDir == ASCIIToSVG::DIR_LEFT) {
-          cMod = (newDir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
+        if (newDir == ASCIIToSVG_DIR_RIGHT || newDir == ASCIIToSVG_DIR_LEFT) {
+          cMod = (newDir == ASCIIToSVG_DIR_RIGHT) ? 1 : -1;
           rMod = 0;
-        } else if (newDir == ASCIIToSVG::DIR_DOWN || newDir == ASCIIToSVG::DIR_UP) {
+        } else if (newDir == ASCIIToSVG_DIR_DOWN || newDir == ASCIIToSVG_DIR_UP) {
           cMod = 0;
-          rMod = (newDir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
+          rMod = (newDir == ASCIIToSVG_DIR_DOWN) ? 1 : -1;
         }
 
         bucket[key] |= newDir;
@@ -2181,41 +2181,41 @@ type ASCIIToSVG struct {
        * earlier branch). We accept the first closing polygon as the
        * "correct" one for this object.
        */
-      if (dir != ASCIIToSVG::DIR_RIGHT && !(bucket[key] & ASCIIToSVG::DIR_LEFT) &&
-          (this.isBoxEdge(w, ASCIIToSVG::DIR_LEFT) || this.isBoxCorner(w))) {
-        bucket[key] |= ASCIIToSVG::DIR_LEFT;
-        this.wallFollow(path, r, c - 1, ASCIIToSVG::DIR_LEFT, bucket, d);
+      if (dir != ASCIIToSVG_DIR_RIGHT && !(bucket[key] & ASCIIToSVG_DIR_LEFT) &&
+          (this.isBoxEdge(w, ASCIIToSVG_DIR_LEFT) || this.isBoxCorner(w))) {
+        bucket[key] |= ASCIIToSVG_DIR_LEFT;
+        this.wallFollow(path, r, c - 1, ASCIIToSVG_DIR_LEFT, bucket, d);
         if (path.IsClosed()) {
           return;
         }
       } 
-      if (dir != ASCIIToSVG::DIR_LEFT && !(bucket[key] & ASCIIToSVG::DIR_RIGHT) &&
-          (this.isBoxEdge(e, ASCIIToSVG::DIR_RIGHT) || this.isBoxCorner(e))) {
-        bucket[key] |= ASCIIToSVG::DIR_RIGHT;
-        this.wallFollow(path, r, c + 1, ASCIIToSVG::DIR_RIGHT, bucket, d);
+      if (dir != ASCIIToSVG_DIR_LEFT && !(bucket[key] & ASCIIToSVG_DIR_RIGHT) &&
+          (this.isBoxEdge(e, ASCIIToSVG_DIR_RIGHT) || this.isBoxCorner(e))) {
+        bucket[key] |= ASCIIToSVG_DIR_RIGHT;
+        this.wallFollow(path, r, c + 1, ASCIIToSVG_DIR_RIGHT, bucket, d);
         if (path.IsClosed()) {
           return;
         }
       } 
-      if (dir != ASCIIToSVG::DIR_DOWN && !(bucket[key] & ASCIIToSVG::DIR_UP) &&
-          (this.isBoxEdge(n, ASCIIToSVG::DIR_UP) || this.isBoxCorner(n))) {
+      if (dir != ASCIIToSVG_DIR_DOWN && !(bucket[key] & ASCIIToSVG_DIR_UP) &&
+          (this.isBoxEdge(n, ASCIIToSVG_DIR_UP) || this.isBoxCorner(n))) {
           if ((cur != '.' && cur != "'") || (cur == '.' && n != '.') ||
               (cur == "'" && n != "'")) {
           /* We can't turn into another bottom edge. */
-          bucket[key] |= ASCIIToSVG::DIR_UP;
-          this.wallFollow(path, r - 1, c, ASCIIToSVG::DIR_UP, bucket, d);
+          bucket[key] |= ASCIIToSVG_DIR_UP;
+          this.wallFollow(path, r - 1, c, ASCIIToSVG_DIR_UP, bucket, d);
           if (path.IsClosed()) {
             return;
           }
         }
       } 
-      if (dir != ASCIIToSVG::DIR_UP && !(bucket[key] & ASCIIToSVG::DIR_DOWN) &&
-          (this.isBoxEdge(s, ASCIIToSVG::DIR_DOWN) || this.isBoxCorner(s))) {
+      if (dir != ASCIIToSVG_DIR_UP && !(bucket[key] & ASCIIToSVG_DIR_DOWN) &&
+          (this.isBoxEdge(s, ASCIIToSVG_DIR_DOWN) || this.isBoxCorner(s))) {
           if ((cur != '.' && cur != "'") || (cur == '.' && s != '.') ||
               (cur == "'" && s != "'")) {
           /* We can't turn into another top edge. */
-          bucket[key] |= ASCIIToSVG::DIR_DOWN;
-          this.wallFollow(path, r + 1, c, ASCIIToSVG::DIR_DOWN, bucket, d);
+          bucket[key] |= ASCIIToSVG_DIR_DOWN;
+          this.wallFollow(path, r + 1, c, ASCIIToSVG_DIR_DOWN, bucket, d);
           if (path.IsClosed()) {
             return;
           }
@@ -2402,9 +2402,9 @@ type ASCIIToSVG struct {
   func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
     if (dir == nil) {
       return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+';
-    } else if (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
+    } else if (dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN) {
       return char == '|' || char == ':' || char == '*' || char == '+';
-    } else if (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
+    } else if (dir == ASCIIToSVG_DIR_LEFT || dir == ASCIIToSVG_DIR_RIGHT) {
       return char == '-' || char == '=' || char == '*' || char == '+';
     }
   }
@@ -2416,13 +2416,13 @@ type ASCIIToSVG struct {
 
     if (dir == nil) {
       return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '/' || char == "\\";
-    } else if (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
+    } else if (dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN) {
       return char == '|' || char == ':' || char == '*';
-    } else if (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
+    } else if (dir == ASCIIToSVG_DIR_LEFT || dir == ASCIIToSVG_DIR_RIGHT) {
       return char == '-' || char == '=' || char == '*';
-    } else if (dir == ASCIIToSVG::DIR_NE) {
+    } else if (dir == ASCIIToSVG_DIR_NE) {
       return char == '/';
-    } else if (dir == ASCIIToSVG::DIR_SE) {
+    } else if (dir == ASCIIToSVG_DIR_SE) {
       return char == "\\";
     }
   }
