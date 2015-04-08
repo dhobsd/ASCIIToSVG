@@ -1347,10 +1347,10 @@ type ASCIIToSVG struct {
    */
   func (this *ASCIIToSVG) parseBoxes() {
     /* Set up our box group  */
-    this.svgObjects.PushGroup('boxes');
-    this.svgObjects.SetOption('stroke', 'black');
-    this.svgObjects.SetOption('stroke-width', '2');
-    this.svgObjects.SetOption('fill', 'none');
+    this.svgObjects.PushGroup(`boxes`);
+    this.svgObjects.SetOption(`stroke`, `black`);
+    this.svgObjects.SetOption(`stroke-width`, `2`);
+    this.svgObjects.SetOption(`fill`, `none`);
 
     /* Scan the grid for corners */
     for row, line := range this.grid {
@@ -1368,7 +1368,7 @@ type ASCIIToSVG struct {
            * The wall follower is a left-turning, marking follower. See that
            * function for more information on how it works.
            */
-          this.wallFollow(path, row, col+1, ASCIIToSVG::DIR_RIGHT);
+          this.wallFollow(path, row, col+1, ASCIIToSVG_DIR_RIGHT);
         
           /* We only care about closed polygons */
           if (path.IsClosed()) {
