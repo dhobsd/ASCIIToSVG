@@ -146,21 +146,22 @@ type Scale struct {
 
       i = 0;
       for _, obj := range objs {
-        for _, path := range obj['paths'] {
-          CustomObjects_Objects[obj['name']][i]['width'] = path['width'];
-          CustomObjects_Objects[obj['name']][i]['height'] = path['height'];
-          CustomObjects_Objects[obj['name']][i++]['path'] =
-            CustomObjects::parsePath(path['path']);
+        for _, path := range obj["paths"] {
+          CustomObjects_Objects[obj["name"]][i]["width"] = path["width"];
+          CustomObjects_Objects[obj["name"]][i]["height"] = path["height"];
+          CustomObjects_Objects[obj["name"]][i]["path"] =
+            CustomObjects_parsePath(path["path"]);
+            i++
         }
       }
     } else {
       ents = scandir(dir);
       for _, ent := range ents {
-        file = "{dir}/{ent}";
+        file = dir+"/"+ent;
         base = substr(ent, 0, -5);
-        if (substr(ent, -5) == '.path' && is_readable(file)) {
+        if (substr(ent, -5) == ".path" && is_readable(file)) {
           if (isset(CustomObjects_Objects[base]) &&
-              filemtime(file) <= CustomObjects::cacheTime) {
+              filemtime(file) <= CustomObjects_cacheTime) {
             continue;
           }
 
@@ -168,16 +169,17 @@ type Scale struct {
 
           i = 0;
           for _, line := range lines {
-            preg_match('/width="(\d+)/', line, m);
+            preg_match(`/width="(\d+)/`, line, m);
             width = m[1];
-            preg_match('/height="(\d+)/', line, m);
+            preg_match(`/height="(\d+)/`, line, m);
             height = m[1];
-            preg_match('/d="([^"]+)"/', line, m);
+            preg_match(`/d="([^"]+)"/`, line, m);
             path = m[1];
 
-            CustomObjects_Objects[base][i]['width'] = width;
-            CustomObjects_Objects[base][i]['height'] = height;
-            CustomObjects_Objects[base][i++]['path'] = CustomObjects::parsePath(path);
+            CustomObjects_Objects[base][i][`width`] = width;
+            CustomObjects_Objects[base][i][`height`] = height;
+            CustomObjects_Objects[base][i][`path`] = CustomObjects_parsePath(path);
+            i++
           }
         }
       }
@@ -191,32 +193,32 @@ type Scale struct {
     }
   }
 
-  func CustomObjects_parsePath(path) {
-    stream = fopen("data://text/plain,{path}", 'r');
+  // func CustomObjects_parsePath(path) {
+  //   stream = fopen("data://text/plain,"+path, 'r');
 
-    P = New\A2S_SVGPathParser();
-    S = New\A2S_Yylex(stream);
+  //   P = NewA2S_SVGPathParser();
+  //   S = NewA2S_Yylex(stream);
 
-    while (t = S.nextToken()) {
-      P.A2S_SVGPath(t.type, t);
-    }
-    /* Force shift/reduce of last token. */
-    P.A2S_SVGPath(0);
+  //   while (t = S.nextToken()) {
+  //     P.A2S_SVGPath(t.type, t);
+  //   }
+  //   /* Force shift/reduce of last token. */
+  //   P.A2S_SVGPath(0);
 
-    fclose(stream);
+  //   fclose(stream);
 
-    cmdArr = array();
-    i = 0;
-    for _, cmd := range P.commands {
-      for _, arg := range cmd {
-        arg = (array)arg;
-        cmdArr[i][] = arg['value'];
-      }
-      i++;
-    }
+  //   cmdArr = array();
+  //   i = 0;
+  //   for _, cmd := range P.commands {
+  //     for _, arg := range cmd {
+  //       arg = (array)arg;
+  //       cmdArr[i][] = arg['value'];
+  //     }
+  //     i++;
+  //   }
 
-    return cmdArr;
-  }
+  //   return cmdArr;
+  // }
 
 /*
  * All lines and polygons are represented as a series of point coordinates
@@ -232,6 +234,7 @@ type Point struct {
   Y;
 
   Flags;
+}
 
   const POINT    = 0x1;
   const CONTROL  = 0x2;
@@ -250,7 +253,6 @@ type Point struct {
     this.GridX = X;
     this.GridY = Y;
   }
-}
 
 /*
  * Groups objects together and sets common properties for the objects in the
@@ -261,6 +263,7 @@ type SVGGroup struct {
   curGroup;
   groupStack;
   options;
+}
 
   func (this *SVGGroup) __construct() {
     this.groups = array();
@@ -278,7 +281,7 @@ type SVGGroup struct {
       this.options[groupName] = array();
     }
 
-    this.groupStack[] = groupName;
+    this.groupStack = append(this.groupStack, groupName)
     this.curGroup = groupName;
   }
 
@@ -293,7 +296,8 @@ type SVGGroup struct {
   }
 
   func (this *SVGGroup) AddObject(o) {
-    this.groups[this.curGroup][] = o;
+    this.groups[this.curGroup]= append(
+    this.groups[this.curGroup] , o);
   }
 
   func (this *SVGGroup) SetOption(opt, val) {
@@ -301,12 +305,12 @@ type SVGGroup struct {
   }
 
   func (this *SVGGroup) Render() {
-    out = '';
+    out = ``;
 
-    foreach(this.groups as groupName => objects) {
+    for groupName, objects := range this.groups {
       out += "<g id=\"{groupName}\" ";
-      foreach (this.options[groupName] as opt => val) {
-        if (strpos(opt, 'a2s:', 0) === 0) {
+      for opt, val := range this.options[groupName] {
+        if (strpos(opt, `a2s:`, 0) == 0) {
           continue;
         }
         out += "opt=\"val\" ";
@@ -322,7 +326,6 @@ type SVGGroup struct {
 
     return out;
   }
-}
 
 /*
  * The Path class represents lines and polygons.
@@ -334,6 +337,7 @@ type SVGPath struct {
   Flags;
   text;
   name;
+}
 
   var SVGPath_id = 0;
 
@@ -345,7 +349,8 @@ type SVGPath struct {
     this.text = array();
     this.ticks = array();
     this.Flags = 0;
-    this.name = SVGPath_id++;
+    this.name = SVGPath_id;
+    SVGPath_id++;
   }
 
   /*
@@ -368,7 +373,7 @@ type SVGPath struct {
     minY = this.points[0].Y;
     minX = this.points[0].X;
     minIdx = 0;
-    for (i = 1; i < pPoints; i++) {
+    for i := 1; i < pPoints; i++ {
       if (this.points[i].Y <= minY) {
         minY = this.points[i].Y;
 
@@ -397,7 +402,8 @@ type SVGPath struct {
     array_pop(this.points);
   }
 
-  func (this *SVGPath) AddPoint(X, Y, Flags = Point::POINT) {
+  // FIXME(akavel): func (this *SVGPath) AddPoint(X, Y, Flags = Point_POINT) {
+  func (this *SVGPath) AddPoint(X, Y, Flags) {
     p = NewPoint(X, Y);
 
     /*
@@ -406,7 +412,7 @@ type SVGPath struct {
      */
     if (count(this.points) > 0) {
       if (this.points[0].X == p.X && this.points[0].Y == p.Y) {
-        this.Flags |= SVGPath::CLOSED;
+        this.Flags |= SVGPath_CLOSED;
         return true;
       }
 
@@ -423,7 +429,7 @@ type SVGPath struct {
     }
 
     p.Flags |= Flags;
-    this.points[] = p;
+    this.points = append( this.points , p)
 
     return false;
   }
@@ -443,24 +449,24 @@ type SVGPath struct {
   func (this *SVGPath) AddMarker(X, Y, t) {
     p = NewPoint(X, Y);
     p.Flags |= t;
-    this.points[] = p;
+    this.points = append( this.points , p);
   }
 
   func (this *SVGPath) AddTick(X, Y, t) {
     p = NewPoint(X, Y);
     p.Flags |= t;
-    this.ticks[] = p;
+    this.ticks=append( this.ticks , p);
   }
 
   /*
    * Is this path closed?
    */
   func (this *SVGPath) IsClosed() {
-    return (this.Flags & SVGPath::CLOSED);
+    return (this.Flags & SVGPath_CLOSED);
   }
 
   func (this *SVGPath) AddText(t) {
-    this.text[] = t;
+    this.text=append( this.text , t);
   }
 
   func (this *SVGPath) GetText() {
@@ -509,7 +515,7 @@ type SVGPath struct {
     oddNodes = false;
 
     bound = count(this.points);
-    for (i = 0, j = count(this.points) - 1; i < bound; i++) {
+    for i,j := 0,  count(this.points) - 1; i < bound; i++ {
       if ((this.points[i].GridY < Y && this.points[j].GridY >= Y ||
            this.points[j].GridY < Y && this.points[i].GridY >= Y) &&
           (this.points[i].GridX <= X || this.points[j].GridX <= X)) {
@@ -543,11 +549,11 @@ type SVGPath struct {
     xyMat = array(array(X), array(Y), array(1));
     newXY = array(array());
 
-    for (i = 0; i < 3; i++) {
-      for (j = 0; j < 1; j++) {
+    for i := 0; i < 3; i++ {
+      for j := 0; j < 1; j++ {
         sum = 0;
 
-        for (k = 0; k < 3; k++) {
+        for k := 0; k < 3; k++ {
           sum += matrix[i][k] * xyMat[k][j];
         }
 
@@ -584,7 +590,8 @@ type SVGPath struct {
    * are not specified, the coordinate is rotated around 0,0. The angle
    * is specified in degrees.
    */
-  func (this *SVGPath) rotateTransform(angle, X, Y, cX = 0, cY = 0) {
+   // FIXME(akavel): func (this *SVGPath) rotateTransform(angle, X, Y, cX = 0, cY = 0) {
+  func (this *SVGPath) rotateTransform(angle, X, Y, cX, cY) {
     angle = angle * (pi() / 180);
     if (cX != 0 || cY != 0) {
       list (X, Y) = this.translateTransform(cX, cY, X, Y);
@@ -629,23 +636,23 @@ type SVGPath struct {
    */
   func (this *SVGPath) applyTransformToPoint(txf, p, args) {
     switch (txf) {
-    case 'translate':
+    case `translate`:
       return this.translateTransform(args[0], args[1], p.X, p.Y);
 
-    case 'scale':
+    case `scale`:
       return this.scaleTransform(args[0], args[1], p.X, p.Y);
 
-    case 'rotate':
+    case `rotate`:
       if (count(args) > 1) {
         return  this.rotateTransform(args[0], p.X, p.Y, args[1], args[2]);
       } else {
         return  this.rotateTransform(args[0], p.X, p.Y);
       }
 
-    case 'skewX':
+    case `skewX`:
       return this.skewXTransform(args[0], p.X, p.Y);
 
-    case 'skewY':
+    case `skewY`:
       return this.skewYTransform(args[0], p.X, p.Y);
     }
   }
@@ -654,14 +661,14 @@ type SVGPath struct {
    * Apply the transformation function txf to all coordinates on path p
    * providing args as arguments to the transformation function.
    */
-  func (this *SVGPath) applyTransformToPath(txf, &p, args) {
-    pathCmds = count(p['path']);
+  func (this *SVGPath) applyTransformToPath(txf, *p, args) {
+    pathCmds = count(p[`path`]);
     curPoint = NewPoint(0, 0);
     prevType = nil;
     curType = nil;
 
-    for (i = 0; i < pathCmds; i++) {
-      cmd = &p['path'][i];
+    for i := 0; i < pathCmds; i++ {
+      cmd = &p[`path`][i];
 
       prevType = curType;
       curType = cmd[0];
@@ -848,7 +855,7 @@ type SVGPath struct {
          * This radius is relative to the start and end points, so it makes
          * sense to scale, rotate, or skew it, but not translate it.
          */
-        if (txf != 'translate') {
+        if (txf != `translate`) {
           curPoint.X = cmd[1];
           curPoint.Y = cmd[2];
           list (X, Y) = this.applyTransformToPoint(txf, curPoint, args);
@@ -881,13 +888,13 @@ type SVGPath struct {
      * done otherwise, but we defer until here to do anything about it because
      * we need information about the object we're replacing.
      */
-    if (isset(this.options['a2s:type']) &&
-        isset(CustomObjects_Objects[this.options['a2s:type']])) {
-      object = CustomObjects_Objects[this.options['a2s:type']];
+    if (isset(this.options[`a2s:type`]) &&
+        isset(CustomObjects_Objects[this.options[`a2s:type`]])) {
+      object = CustomObjects_Objects[this.options[`a2s:type`]];
 
       /* Again, if no fill was specified, specify one. */
-      if (!isset(this.options['fill'])) {
-        this.options['fill'] = '#fff';
+      if (!isset(this.options[`fill`])) {
+        this.options[`fill`] = `#fff`;
       }
 
       /*
@@ -900,12 +907,12 @@ type SVGPath struct {
       for _, p := range this.points {
         if (p.X < minX) {
           minX = p.X;
-        } elseif (p.X > maxX) {
+        } else if (p.X > maxX) {
           maxX = p.X;
         }
         if (p.Y < minY) {
           minY = p.Y;
-        } elseif (p.Y > maxY) {
+        } else if (p.Y > maxY) {
           maxY = p.Y;
         }
       }
@@ -915,36 +922,38 @@ type SVGPath struct {
 
       i = 0;
       for _, o := range object {
-        id = SVGPath_id++;
-        out += "\t<path id=\"path{this.name}\" d=\"";
+        id = SVGPath_id;
+        SVGPath_id++;
+        out += "\t<path id=\"path"+this.name+"\" d=\"";
 
-        oW = o['width'];
-        oH = o['height'];
+        oW = o[`width`];
+        oH = o[`height`];
 
-        this.applyTransformToPath('scale', o, array(objW/oW, objH/oH));
-        this.applyTransformToPath('translate', o, array(minX, minY));
+        this.applyTransformToPath(`scale`, o, array(objW/oW, objH/oH));
+        this.applyTransformToPath(`translate`, o, array(minX, minY));
 
-        for _, cmd := range o['path'] {
-          out += join(' ', cmd) . ' ';
+        for _, cmd := range o[`path`] {
+          out += join(` `, cmd) + ` `;
         }
-        out += '" ';
+        out += `" `;
 
         /* Don't add options to sub-paths */
-        if (i++ < 1) {
-          foreach (this.options as opt => val) {
-            if (strpos(opt, 'a2s:', 0) === 0) {
+        if (i < 1) {
+          for opt, val := range this.options {
+            if (strpos(opt, `a2s:`, 0) == 0) {
               continue;
             }
             out += "opt=\"val\" ";
           }
         }
+        i++
 
         out += " />\n";
       }
 
       if (count(this.text) > 0) {
         for _, text := range this.text {
-          out += "\t" . text.Render() . "\n";
+          out += "\t" + text.Render() + "\n";
         }
       }
       out += "</g>\n";
@@ -962,7 +971,7 @@ type SVGPath struct {
      * automatically if it is a closed shape. If we have a control point, we
      * have to go ahead and draw the curve.
      */
-    if ((startPoint.Flags & Point::CONTROL)) {
+    if ((startPoint.Flags & Point_CONTROL)) {
       cX = startPoint.X;
       cY = startPoint.Y;
       sX = startPoint.X;
@@ -977,7 +986,7 @@ type SVGPath struct {
 
     prevP = startPoint;
     bound = count(this.points);
-    for (i = 0; i < bound; i++) {
+    for i := 0; i < bound; i++ {
       p = this.points[i];
 
       /*
@@ -985,7 +994,7 @@ type SVGPath struct {
        * the curves only works if the shapes are drawn in a clockwise
        * manner.
        */
-      if ((p.Flags & Point::CONTROL)) {
+      if ((p.Flags & Point_CONTROL)) {
         /* Our control point is always the original corner */
         cX = p.X;
         cY = p.Y;
@@ -1018,7 +1027,7 @@ type SVGPath struct {
           } else {
             eX = p.X + 10;
           }
-        } elseif (prevP.Y == p.Y) {
+        } else if (prevP.Y == p.Y) {
           /* Horizontal decisions mirror vertical's above */
           sY = p.Y;
           if (prevP.X < p.X) {
@@ -1048,18 +1057,19 @@ type SVGPath struct {
       path += 'Z';
     } 
 
-    id = SVGPath_id++;
+    id = SVGPath_id;
+    SVGPath_id++;
 
     /* Add markers if necessary. */
-    if (startPoint.Flags & Point::SMARKER) {
+    if (startPoint.Flags & Point_SMARKER) {
       this.options["marker-start"] = "url(#Pointer)";
-    } elseif (startPoint.Flags & Point::IMARKER) {
+    } else if (startPoint.Flags & Point_IMARKER) {
       this.options["marker-start"] = "url(#iPointer)";
     }
 
-    if (endPoint.Flags & Point::SMARKER) {
+    if (endPoint.Flags & Point_SMARKER) {
       this.options["marker-end"] = "url(#Pointer)";
-    } elseif (endPoint.Flags & Point::IMARKER) {
+    } else if (endPoint.Flags & Point_IMARKER) {
       this.options["marker-end"] = "url(#iPointer)";
     }
 
@@ -1068,14 +1078,14 @@ type SVGPath struct {
      * terrible with the drop-shadow effect. Any objects that aren't filled
      * automatically get a white fill.
      */
-    if (this.IsClosed() && !isset(this.options['fill'])) {
-      this.options['fill'] = '#fff';
+    if (this.IsClosed() && !isset(this.options[`fill`])) {
+      this.options[`fill`] = `#fff`;
     }
 
 
     out += "\t<path id=\"path{this.name}\" ";
-    foreach (this.options as opt => val) {
-      if (strpos(opt, 'a2s:', 0) === 0) {
+    for opt, val := range this.options {
+      if (strpos(opt, `a2s:`, 0) == 0) {
         continue;
       }
       out += "opt=\"val\" ";
@@ -1085,16 +1095,16 @@ type SVGPath struct {
     if (count(this.text) > 0) {
       for _, text := range this.text {
         text.SetID(this.name);
-        out += "\t" . text.Render() . "\n";
+        out += "\t" + text.Render() + "\n";
       }
     }
 
     bound = count(this.ticks);
-    for (i = 0; i < bound; i++) {
+    for i := 0; i < bound; i++ {
       t = this.ticks[i];
-      if (t.Flags & Point::DOT) {
+      if (t.Flags & Point_DOT) {
         out += "<circle cx=\"{t.X}\" cy=\"{t.Y}\" r=\"3\" fill=\"black\" />";
-      } elseif (t.Flags & Point::TICK) {
+      } else if (t.Flags & Point_TICK) {
         x1 = t.X - 4;
         y1 = t.Y - 4;
         x2 = t.X + 4;
@@ -1112,7 +1122,6 @@ type SVGPath struct {
     out += "</g>\n";
     return out;
   }
-}
 
 /*
  * Nothing really special here. Container for representing text bits.
@@ -1122,12 +1131,14 @@ type SVGText struct {
   string;
   point;
   name;
+}
 
   var SVGText_id = 0;
 
   func (this *SVGText) __construct(X, Y) {
     this.point = NewPoint(X, Y);
-    this.name = SVGText_id++;
+    this.name = SVGText_id;
+    SVGText_id++;
     this.options = array();
   }
 
@@ -1153,8 +1164,8 @@ type SVGText struct {
 
   func (this *SVGText) Render() {
     out = "<text X=\"{this.point.X}\" Y=\"{this.point.Y}\" id=\"text{this.name}\" ";
-    foreach (this.options as opt => val) {
-      if (strpos(opt, 'a2s:', 0) === 0) {
+    for opt, val := range this.options {
+      if (strpos(opt, `a2s:`, 0) == 0) {
         continue;
       }
       out += "opt=\"val\" ";
@@ -1164,21 +1175,21 @@ type SVGText struct {
     out += "</text>\n";
     return out;
   }
-}
 
 /*
  * Main class for parsing ASCII and constructing the SVG output based on the
  * above classes.
  */
 type ASCIIToSVG struct {
-  BlurDropShadow = true;
-  FontFamily = "Consolas,Monaco,Anonymous Pro,Anonymous,Bitstream Sans Mono,monospace";
+  // FIXME(akavel): BlurDropShadow = true;
+  // FIXME(akavel): FontFamily = "Consolas,Monaco,Anonymous Pro,Anonymous,Bitstream Sans Mono,monospace";
 
   rawData;
   grid;
 
   svgObjects;
   clearCorners;
+}
 
   /* Directions for traversing lines in our grid */
   const DIR_UP    = 0x1;
@@ -1204,13 +1215,13 @@ type ASCIIToSVG struct {
      * The JSON blob may not contain objects as values or the regex will break.
      */
     this.commands = array();
-    preg_match_all('/^\[([^\]]+)\]:?\s+({[^}]+?})/ims', data, matches);
+    preg_match_all(`/^\[([^\]]+)\]:?\s+({[^}]+?})/ims`, data, matches);
     bound = count(matches[1]);
-    for (i = 0; i < bound; i++) {
+    for i := 0; i < bound; i++ {
       this.commands[matches[1][i]] = json_decode(matches[2][i], true);
     }
 
-    data = preg_replace('/^\[([^\]]+)\](:?)\s+.*/ims', '', data);
+    data = preg_replace(`/^\[([^\]]+)\](:?)\s+.*/ims`, ``, data);
 
     /*
      * Treat our ASCII field as a grid and store each character as a point in
@@ -1348,7 +1359,7 @@ type ASCIIToSVG struct {
           path = NewSVGPath();
 
           if (char == '.' || char == "'") {
-            path.AddPoint(col, row, Point::CONTROL);
+            path.AddPoint(col, row, Point_CONTROL);
           } else {
             path.AddPoint(col, row);
           }
@@ -1488,16 +1499,16 @@ type ASCIIToSVG struct {
         case '<':
           e = this.getChar(r, c + 1);
           if (this.isEdge(e, ASCIIToSVG::DIR_RIGHT) || this.isCorner(e)) {
-            line.AddMarker(c, r, Point::IMARKER);
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_RIGHT;
           } else {
             se = this.getChar(r + 1, c + 1);
             ne = this.getChar(r - 1, c + 1);
             if (se == "\\") {
-              line.AddMarker(c, r, Point::IMARKER);
+              line.AddMarker(c, r, Point_IMARKER);
               dir = ASCIIToSVG::DIR_SE;
-            } elseif (ne == '/') {
-              line.AddMarker(c, r, Point::IMARKER);
+            } else if (ne == '/') {
+              line.AddMarker(c, r, Point_IMARKER);
               dir = ASCIIToSVG::DIR_NE;
             }
           }
@@ -1505,18 +1516,18 @@ type ASCIIToSVG struct {
         case '^':
           s = this.getChar(r + 1, c);
           if (this.isEdge(s, ASCIIToSVG::DIR_DOWN) || this.isCorner(s)) { 
-            line.AddMarker(c, r, Point::IMARKER);
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_DOWN;
-          } elseif (this.getChar(r + 1, c + 1) == "\\") {
+          } else if (this.getChar(r + 1, c + 1) == "\\") {
             /* Don't need to check west for diagonals. */
-            line.AddMarker(c, r, Point::IMARKER);
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_SE;
           }
           break;
         case '>':
           w = this.getChar(r, c - 1);
           if (this.isEdge(w, ASCIIToSVG::DIR_LEFT) || this.isCorner(w)) {
-            line.AddMarker(c, r, Point::IMARKER);
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_LEFT;
           }
           /* All diagonals come from west, so we don't need to check */
@@ -1524,10 +1535,10 @@ type ASCIIToSVG struct {
         case 'v':
           n = this.getChar(r - 1, c);
           if (this.isEdge(n, ASCIIToSVG::DIR_UP) || this.isCorner(n)) {
-            line.AddMarker(c, r, Point::IMARKER);
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_UP;
-          } elseif (this.getChar(r - 1, c + 1) == '/') {
-            line.AddMarker(c, r, Point::IMARKER);
+          } else if (this.getChar(r - 1, c + 1) == '/') {
+            line.AddMarker(c, r, Point_IMARKER);
             dir = ASCIIToSVG::DIR_NE;
           }
           break;
@@ -1558,7 +1569,7 @@ type ASCIIToSVG struct {
               n != '|' && n != ':' && !this.isCorner(n) &&
               n != '^') {
             dir = ASCIIToSVG::DIR_DOWN;
-          } elseif ((n == '|' || n == ':' || this.isCorner(n)) &&
+          } else if ((n == '|' || n == ':' || this.isCorner(n)) &&
                     s != '|' && s != ':' && !this.isCorner(s) &&
                     s != 'v') {
             dir = ASCIIToSVG::DIR_UP;
@@ -1581,7 +1592,7 @@ type ASCIIToSVG struct {
               e != '=' && e != '-' && !this.isCorner(e) &&
               e != '>') {
             dir = ASCIIToSVG::DIR_LEFT;
-          } elseif ((e == '-' || e == '=' || this.isCorner(e)) &&
+          } else if ((e == '-' || e == '=' || this.isCorner(e)) &&
                     w != '=' && w != '-' && !this.isCorner(w) &&
                     w != '<') {
             dir = ASCIIToSVG::DIR_RIGHT;
@@ -1622,7 +1633,7 @@ type ASCIIToSVG struct {
           se =  this.getChar(r+1, c+1);
           if (ne == '/' || ne == '^' || ne == '>') {
             dir = ASCIIToSVG::DIR_NE;
-          } elseif (se == "\\" || se == "v" || se == '>') {
+          } else if (se == "\\" || se == "v" || se == '>') {
             dir = ASCIIToSVG::DIR_SE;
           }
           /* FALLTHROUGH */
@@ -1636,16 +1647,16 @@ type ASCIIToSVG struct {
           if ((w == '=' || w == '-') && n != '|' && n != ':' && w != '-' &&
               e != '=' && e != '|' && s != ':') {
             dir = ASCIIToSVG::DIR_LEFT;
-          } elseif ((e == '=' || e == '-') && n != '|' && n != ':' && 
+          } else if ((e == '=' || e == '-') && n != '|' && n != ':' && 
               w != '-' && w != '=' && s != '|' && s != ':') {
             dir = ASCIIToSVG::DIR_RIGHT;
-          } elseif ((s == '|' || s == ':') && n != '|' && n != ':' &&
+          } else if ((s == '|' || s == ':') && n != '|' && n != ':' &&
                     w != '-' && w != '=' && e != '-' && e != '=' &&
                     ((char != '.' && char != "'") || 
                      (char == '.' && s != '.') || 
                      (char == "'" && s != "'"))) {
             dir = ASCIIToSVG::DIR_DOWN;
-          } elseif ((n == '|' || n == ':') && s != '|' && s != ':' &&
+          } else if ((n == '|' || n == ':') && s != '|' && s != ':' &&
                     w != '-' && w != '=' && e != '-' && e != '=' &&
                     ((char != '.' && char != "'") || 
                      (char == '.' && s != '.') || 
@@ -1668,15 +1679,15 @@ type ASCIIToSVG struct {
            */
           if (dir == ASCIIToSVG::DIR_UP) {
             rInc = -1; cInc = 0;
-          } elseif (dir == ASCIIToSVG::DIR_DOWN) {
+          } else if (dir == ASCIIToSVG::DIR_DOWN) {
             rInc = 1; cInc = 0;
-          } elseif (dir == ASCIIToSVG::DIR_RIGHT) {
+          } else if (dir == ASCIIToSVG::DIR_RIGHT) {
             rInc = 0; cInc = 1;
-          } elseif (dir == ASCIIToSVG::DIR_LEFT) {
+          } else if (dir == ASCIIToSVG::DIR_LEFT) {
             rInc = 0; cInc = -1;
-          } elseif (dir == ASCIIToSVG::DIR_NE) {
+          } else if (dir == ASCIIToSVG::DIR_NE) {
             rInc = -1; cInc = 1;
-          } elseif (dir == ASCIIToSVG::DIR_SE) {
+          } else if (dir == ASCIIToSVG::DIR_SE) {
             rInc = 1; cInc = 1;
           }
 
@@ -1801,7 +1812,7 @@ type ASCIIToSVG struct {
                   cR = hexdec(str_repeat(fill[1], 2));
                   cG = hexdec(str_repeat(fill[2], 2));
                   cB = hexdec(str_repeat(fill[3], 2));
-                } elseif (strlen(fill) == 7) {
+                } else if (strlen(fill) == 7) {
                   cR = hexdec(substr(fill, 1, 2));
                   cG = hexdec(substr(fill, 3, 2));
                   cB = hexdec(substr(fill, 5, 2));
@@ -1931,10 +1942,10 @@ type ASCIIToSVG struct {
     if (dir == ASCIIToSVG::DIR_RIGHT || dir == ASCIIToSVG::DIR_LEFT) {
       cInc = (dir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
       rInc = 0;
-    } elseif (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
+    } else if (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
       cInc = 0;
       rInc = (dir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
-    } elseif (dir == ASCIIToSVG::DIR_SE || dir == ASCIIToSVG::DIR_NE) {
+    } else if (dir == ASCIIToSVG::DIR_SE || dir == ASCIIToSVG::DIR_NE) {
       cInc = 1;
       rInc = (dir == ASCIIToSVG::DIR_SE) ? 1 : -1;
     }
@@ -1947,7 +1958,7 @@ type ASCIIToSVG struct {
       }
 
       if (this.isTick(cur)) {
-        path.AddTick(c, r, (cur == 'o') ? Point::DOT : Point::TICK);
+        path.AddTick(c, r, (cur == 'o') ? Point_DOT : Point_TICK);
         path.AddPoint(c, r);
       }
 
@@ -1958,7 +1969,7 @@ type ASCIIToSVG struct {
 
     if (this.isCorner(cur)) {
       if (cur == '.' || cur == "'") {
-        path.AddPoint(c, r, Point::CONTROL);
+        path.AddPoint(c, r, Point_CONTROL);
       } else {
         path.AddPoint(c, r);
       }
@@ -1984,36 +1995,36 @@ type ASCIIToSVG struct {
 
       if (this.isCorner(next) || this.isEdge(next, dir)) {
         return this.walk(path, r + rInc, c + cInc, dir, d);
-      } elseif (dir != ASCIIToSVG::DIR_DOWN &&
+      } else if (dir != ASCIIToSVG::DIR_DOWN &&
                 (this.isCorner(n) || this.isEdge(n, ASCIIToSVG::DIR_UP))) {
         /* Can't turn up into bottom corner */
         if ((cur != '.' && cur != "'") || (cur == '.' && n != '.') ||
               (cur == "'" && n != "'")) {
           return this.walk(path, r - 1, c, ASCIIToSVG::DIR_UP, d);
         }
-      } elseif (dir != ASCIIToSVG::DIR_UP && 
+      } else if (dir != ASCIIToSVG::DIR_UP && 
                 (this.isCorner(s) || this.isEdge(s, ASCIIToSVG::DIR_DOWN))) {
         /* Can't turn down into top corner */
         if ((cur != '.' && cur != "'") || (cur == '.' && s != '.') ||
               (cur == "'" && s != "'")) {
           return this.walk(path, r + 1, c, ASCIIToSVG::DIR_DOWN, d);
         }
-      } elseif (dir != ASCIIToSVG::DIR_LEFT &&
+      } else if (dir != ASCIIToSVG::DIR_LEFT &&
                 (this.isCorner(e) || this.isEdge(e, ASCIIToSVG::DIR_RIGHT))) {
         return this.walk(path, r, c + 1, ASCIIToSVG::DIR_RIGHT, d);
-      } elseif (dir != ASCIIToSVG::DIR_RIGHT &&
+      } else if (dir != ASCIIToSVG::DIR_RIGHT &&
                 (this.isCorner(w) || this.isEdge(w, ASCIIToSVG::DIR_LEFT))) {
         return this.walk(path, r, c - 1, ASCIIToSVG::DIR_LEFT, d);
-      } elseif (dir == ASCIIToSVG::DIR_SE &&
+      } else if (dir == ASCIIToSVG::DIR_SE &&
                 (this.isCorner(ne) || this.isEdge(ne, ASCIIToSVG::DIR_NE))) {
         return this.walk(path, r - 1, c + 1, ASCIIToSVG::DIR_NE, d);
-      } elseif (dir == ASCIIToSVG::DIR_NE &&
+      } else if (dir == ASCIIToSVG::DIR_NE &&
                 (this.isCorner(se) || this.isEdge(se, ASCIIToSVG::DIR_SE))) {
         return this.walk(path, r + 1, c + 1, ASCIIToSVG::DIR_SE, d);
       }
-    } elseif (this.isMarker(cur)) {
+    } else if (this.isMarker(cur)) {
       /* We found a marker! Add it. */
-      path.AddMarker(c, r, Point::SMARKER);
+      path.AddMarker(c, r, Point_SMARKER);
       return;
     } else {
       /*
@@ -2046,7 +2057,7 @@ type ASCIIToSVG struct {
     if (dir == ASCIIToSVG::DIR_RIGHT || dir == ASCIIToSVG::DIR_LEFT) {
       cInc = (dir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
       rInc = 0;
-    } elseif (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
+    } else if (dir == ASCIIToSVG::DIR_DOWN || dir == ASCIIToSVG::DIR_UP) {
       cInc = 0;
       rInc = (dir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
     }
@@ -2077,7 +2088,7 @@ type ASCIIToSVG struct {
       switch (cur) {
       case '.':
       case "'":
-        pointExists = path.AddPoint(c, r, Point::CONTROL);
+        pointExists = path.AddPoint(c, r, Point_CONTROL);
         break;
 
       case '#':
@@ -2123,12 +2134,12 @@ type ASCIIToSVG struct {
             return;
           }
         }
-      } elseif (dir == ASCIIToSVG::DIR_DOWN) {
+      } else if (dir == ASCIIToSVG::DIR_DOWN) {
         if (!(bucket[key] & ASCIIToSVG::DIR_LEFT) &&
             (this.isBoxEdge(w, ASCIIToSVG::DIR_LEFT) || this.isBoxCorner(w))) {
           newDir == ASCIIToSVG::DIR_LEFT;
         } 
-      } elseif (dir == ASCIIToSVG::DIR_LEFT) {
+      } else if (dir == ASCIIToSVG::DIR_LEFT) {
         if (!(bucket[key] & ASCIIToSVG::DIR_UP) &&
             (this.isBoxEdge(n, ASCIIToSVG::DIR_UP) || this.isBoxCorner(n))) {
           /* We can't turn into another bottom edge. */
@@ -2137,7 +2148,7 @@ type ASCIIToSVG struct {
             newDir = ASCIIToSVG::DIR_UP;
           }
         } 
-      } elseif (dir == ASCIIToSVG::DIR_UP) {
+      } else if (dir == ASCIIToSVG::DIR_UP) {
         if (!(bucket[key] & ASCIIToSVG::DIR_RIGHT) &&
             (this.isBoxEdge(e, ASCIIToSVG::DIR_RIGHT) || this.isBoxCorner(e))) {
           newDir = ASCIIToSVG::DIR_RIGHT;
@@ -2148,7 +2159,7 @@ type ASCIIToSVG struct {
         if (newDir == ASCIIToSVG::DIR_RIGHT || newDir == ASCIIToSVG::DIR_LEFT) {
           cMod = (newDir == ASCIIToSVG::DIR_RIGHT) ? 1 : -1;
           rMod = 0;
-        } elseif (newDir == ASCIIToSVG::DIR_DOWN || newDir == ASCIIToSVG::DIR_UP) {
+        } else if (newDir == ASCIIToSVG::DIR_DOWN || newDir == ASCIIToSVG::DIR_UP) {
           cMod = 0;
           rMod = (newDir == ASCIIToSVG::DIR_DOWN) ? 1 : -1;
         }
@@ -2218,7 +2229,7 @@ type ASCIIToSVG struct {
        */
       path.PopPoint();
       return;
-    } elseif (this.isMarker(this.getChar(r, c))) {
+    } else if (this.isMarker(this.getChar(r, c))) {
       /* Marker is part of a line, not a wall to close. */
       return;
     } else {
@@ -2260,13 +2271,13 @@ type ASCIIToSVG struct {
 
           if (!this.isTick(char) && this.isEdge(char) || this.isMarker(char)) {
             this.grid[j][p.GridX] = ' ';
-          } elseif (this.isCorner(char)) {
+          } else if (this.isCorner(char)) {
             this.clearCorners[] = array(j, p.GridX);
-          } elseif (this.isTick(char)) {
+          } else if (this.isTick(char)) {
             this.grid[j][p.GridX] = '+';
           }
         }
-      } elseif (nP != nil && p.GridY == nP.GridY) {
+      } else if (nP != nil && p.GridY == nP.GridY) {
         /* Same horizontal plane; traverse from min to max point */
         maxX = max(p.GridX, nP.GridX);
         for (j = min(p.GridX, nP.GridX); j <= maxX; j++) {
@@ -2274,13 +2285,13 @@ type ASCIIToSVG struct {
 
           if (!this.isTick(char) && this.isEdge(char) || this.isMarker(char)) {
             this.grid[p.GridY][j] = ' ';
-          } elseif (this.isCorner(char)) {
+          } else if (this.isCorner(char)) {
             this.clearCorners[] = array(p.GridY, j);
-          } elseif (this.isTick(char)) {
+          } else if (this.isTick(char)) {
             this.grid[p.GridY][j] = '+';
           }
         }
-      } elseif (nP != nil && closed == false && p.GridX != nP.GridX &&
+      } else if (nP != nil && closed == false && p.GridX != nP.GridX &&
                 p.GridY != nP.GridY) {
         /*
          * This is a diagonal line starting from the westernmost point. It
@@ -2302,9 +2313,9 @@ type ASCIIToSVG struct {
           char = this.getChar(r, c);
           if (char == '/' || char == "\\" || this.isMarker(char)) {
             this.grid[r][c++] = ' ';
-          } elseif (this.isCorner(char)) {
+          } else if (this.isCorner(char)) {
             this.clearCorners[] = array(r, c++);
-          } elseif (this.isTick(char)) {
+          } else if (this.isTick(char)) {
             this.grid[r][c] = '+';
           }
           r += rInc;
@@ -2391,9 +2402,9 @@ type ASCIIToSVG struct {
   func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
     if (dir == nil) {
       return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+';
-    } elseif (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
+    } else if (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
       return char == '|' || char == ':' || char == '*' || char == '+';
-    } elseif (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
+    } else if (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
       return char == '-' || char == '=' || char == '*' || char == '+';
     }
   }
@@ -2405,13 +2416,13 @@ type ASCIIToSVG struct {
 
     if (dir == nil) {
       return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '/' || char == "\\";
-    } elseif (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
+    } else if (dir == ASCIIToSVG::DIR_UP || dir == ASCIIToSVG::DIR_DOWN) {
       return char == '|' || char == ':' || char == '*';
-    } elseif (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
+    } else if (dir == ASCIIToSVG::DIR_LEFT || dir == ASCIIToSVG::DIR_RIGHT) {
       return char == '-' || char == '=' || char == '*';
-    } elseif (dir == ASCIIToSVG::DIR_NE) {
+    } else if (dir == ASCIIToSVG::DIR_NE) {
       return char == '/';
-    } elseif (dir == ASCIIToSVG::DIR_SE) {
+    } else if (dir == ASCIIToSVG::DIR_SE) {
       return char == "\\";
     }
   }
@@ -2431,7 +2442,6 @@ type ASCIIToSVG struct {
   func (this *ASCIIToSVG) isTick(char) {
     return char == 'o' || char == 'X';
   }
-}
 
 /* vim:ts=2:sw=2:et:
  *  * */
