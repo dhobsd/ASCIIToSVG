@@ -50,7 +50,7 @@ func Scale_GetInstance() {
 	return Scale_instance
 }
 
-func (this *Scale) SetScale(x, y) {
+func (this *Scale) SetScale(x, y Coord) {
 	o = Scale_GetInstance()
 	o.XScale = x
 	o.YScale = y
@@ -223,6 +223,8 @@ func CustomObjects_LoadObjects() {
 //   return cmdArr;
 // }
 
+type Point_Flags int
+
 /*
  * All lines and polygons are represented as a series of point coordinates
  * along a path. Points can have different properties; markers appear on
@@ -230,23 +232,24 @@ func CustomObjects_LoadObjects() {
  * calculated for the corner represented by this point.
  */
 type Point struct {
-	GridX
-	GridY
+	GridX Coord
+	GridY Coord
 
-	X
-	Y
+	X Coord
+	Y Coord
 
-	Flags
+	Flags Point_Flags
 }
 
-const POINT = 0x1
-const CONTROL = 0x2
-const SMARKER = 0x4
-const IMARKER = 0x8
-const TICK = 0x10
-const DOT = 0x20
+const Point_POINT = 0x1
+const Point_CONTROL = 0x2
+const Point_SMARKER = 0x4
+const Point_IMARKER = 0x8
+const Point_TICK = 0x10
+const Point_DOT = 0x20
 
-func (this *Point) __construct(X, Y) {
+func NewPoint(X, Y Coord) *Point {
+	this := Point{}
 	this.Flags = 0
 
 	s = Scale_GetInstance()
@@ -255,17 +258,20 @@ func (this *Point) __construct(X, Y) {
 
 	this.GridX = X
 	this.GridY = Y
+	return &this
 }
+
+type Object struct{}
 
 /*
  * Groups objects together and sets common properties for the objects in the
  * group.
  */
 type SVGGroup struct {
-	groups
-	curGroup
-	groupStack
-	options
+	groups     map[string][]Object
+	curGroup   string
+	groupStack []string
+	options    map[string]map[string]string
 }
 
 func (this *SVGGroup) __construct() {
@@ -274,11 +280,11 @@ func (this *SVGGroup) __construct() {
 	this.options = array()
 }
 
-func (this *SVGGroup) GetGroup(groupName) {
+func (this *SVGGroup) GetGroup(groupName string) {
 	return this.groups[groupName]
 }
 
-func (this *SVGGroup) PushGroup(groupName) {
+func (this *SVGGroup) PushGroup(groupName string) {
 	if !isset(this.groups[groupName]) {
 		this.groups[groupName] = array()
 		this.options[groupName] = array()
@@ -298,12 +304,12 @@ func (this *SVGGroup) PopGroup() {
 	this.curGroup = array_pop(this.groupStack)
 }
 
-func (this *SVGGroup) AddObject(o) {
+func (this *SVGGroup) AddObject(o Object) {
 	this.groups[this.curGroup] = append(
 		this.groups[this.curGroup], o)
 }
 
-func (this *SVGGroup) SetOption(opt, val) {
+func (this *SVGGroup) SetOption(opt, val string) {
 	this.options[this.curGroup][opt] = val
 }
 
@@ -311,7 +317,7 @@ func (this *SVGGroup) Render() {
 	out = ``
 
 	for groupName, objects := range this.groups {
-		out += "<g id=\"{groupName}\" "
+		out += "<g id=\"" + groupName + "\" "
 		for opt, val := range this.options[groupName] {
 			if strpos(opt, `a2s:`, 0) == 0 {
 				continue
