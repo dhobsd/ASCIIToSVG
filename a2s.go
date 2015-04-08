@@ -2347,7 +2347,8 @@ if(p.GridY > nP.GridY) {
             this.grid[r][c] = ' ';
             c++
           } else if (this.isCorner(char)) {
-            this.clearCorners[] = array(r, c++);
+            this.clearCorners=append( this.clearCorners, array(r, c));
+            c++
           } else if (this.isTick(char)) {
             this.grid[r][c] = '+';
           }
@@ -2372,31 +2373,34 @@ if(p.GridY > nP.GridY) {
     points = box.GetPoints();
     sX = points[0].GridX + 1;
     sY = points[0].GridY + 1;
-    ref = '';
-    if (this.getChar(sY, sX++) == '[') {
-      char = this.getChar(sY, sX++);
-      while (char != ']') {
+    ref = ``;
+    if (this.getChar(sY, sX) == '[') {
+      sX++
+      char = this.getChar(sY, sX);
+      sX++
+      for (char != ']') {
         ref += char;
-        char = this.getChar(sY, sX++);
+        char = this.getChar(sY, sX);
+        sX++
       }
 
       if (char == ']') {
         sX = points[0].GridX + 1;
         sY = points[0].GridY + 1;
 
-        if (!isset(this.commands[ref]['a2s:delref']) &&
-            !isset(this.commands[ref]['a2s:label'])) {
+        if (!isset(this.commands[ref][`a2s:delref`]) &&
+            !isset(this.commands[ref][`a2s:label`])) {
           this.grid[sY][sX] = ' ';
           this.grid[sY][sX + strlen(ref) + 1] = ' ';
         } else {
-          if (isset(this.commands[ref]['a2s:label'])) {
-            label = this.commands[ref]['a2s:label'];
+          if (isset(this.commands[ref][`a2s:label`])) {
+            label = this.commands[ref][`a2s:label`];
           } else {
             label = nil;
           }
 
           len = strlen(ref) + 2;
-          for (i = 0; i < len; i++) {
+          for i := 0; i < len; i++ {
             if (strlen(label) > i) {
               this.grid[sY][sX + i] = substr(label, i, 1);
             } else {
@@ -2420,7 +2424,7 @@ if(p.GridY > nP.GridY) {
    */
   func (this *ASCIIToSVG) dumpGrid() {
     for _, lines := range this.grid {
-      echo implode('', lines) . "\n";
+      echo( implode(``, lines) + "\n");
     }
   }
 
@@ -2432,7 +2436,8 @@ if(p.GridY > nP.GridY) {
     return nil;
   }
 
-  func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
+  // FIXME(akavel): func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
+  func (this *ASCIIToSVG) isBoxEdge(char, dir) {
     if (dir == nil) {
       return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+';
     } else if (dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN) {
