@@ -66,6 +66,7 @@ func main() {
 
 		case line.Find(`^}\s*$`):
 			class = ""
+			fmt.Println(line.Text)
 
 		// static fields/methods
 		case line.Find(`^(\s*)(public|private)\s+static\s+(function\s+)?(\w+)`):

@@ -60,6 +60,7 @@ type Scale struct {
     o.XScale = x;
     o.YScale = y;
   }
+}
 
 /*
  * CustomObjects allows users to create their own custom SVG paths and use
@@ -227,6 +228,7 @@ type CustomObjects struct {
 
     return cmdArr;
   }
+}
 
 /*
  * All lines and polygons are represented as a series of point coordinates
@@ -260,6 +262,7 @@ type Point struct {
     this.GridX = X;
     this.GridY = Y;
   }
+}
 
 /*
  * Groups objects together and sets common properties for the objects in the
@@ -331,6 +334,7 @@ type SVGGroup struct {
 
     return out;
   }
+}
 
 /*
  * The Path class represents lines and polygons.
@@ -1120,6 +1124,7 @@ type SVGPath struct {
     out += "</g>\n";
     return out;
   }
+}
 
 /*
  * Nothing really special here. Container for representing text bits.
@@ -1171,6 +1176,7 @@ type SVGText struct {
     out += "</text>\n";
     return out;
   }
+}
 
 /*
  * Main class for parsing ASCII and constructing the SVG output based on the
@@ -2437,6 +2443,7 @@ type ASCIIToSVG struct {
   func (this *ASCIIToSVG) isTick(char) {
     return char == 'o' || char == 'X';
   }
+}
 
 /* vim:ts=2:sw=2:et:
  *  * */
