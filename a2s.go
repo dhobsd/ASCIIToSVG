@@ -108,7 +108,7 @@ func (this *Scale) SetScale(x, y Coord) {
  * Note that the path parser isn't foolproof, mostly because PHP isn't the
  * greatest language ever for implementing a parser.
  */
-type CustomObjectsType []struct{}
+type CustomObjectsType map[string]struct{}
 
 var CustomObjects_Objects = CustomObjectsType{}
 
@@ -843,7 +843,7 @@ func (this *SVGPath) applyTransformToPath(txf string, p map[string][][]string, a
 			break
 
 		case `c`:
-			tP = NewPoint(0, 0)
+			tP := NewPoint(0, 0)
 			tP.X = curPoint.X + atof(cmd[1])
 			tP.Y = curPoint.Y + atof(cmd[2])
 			X, Y := this.applyTransformToPoint(txf, tP, args)
@@ -852,13 +852,13 @@ func (this *SVGPath) applyTransformToPath(txf string, p map[string][][]string, a
 
 			tP.X = curPoint.X + atof(cmd[3])
 			tP.Y = curPoint.Y + atof(cmd[4])
-			X, Y := this.applyTransformToPoint(txf, tP, args)
+			X, Y = this.applyTransformToPoint(txf, tP, args)
 			cmd[3] = fmt.Sprint(X)
 			cmd[4] = fmt.Sprint(Y)
 
 			curPoint.X += atof(cmd[5])
 			curPoint.Y += atof(cmd[6])
-			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+			X, Y = this.applyTransformToPoint(txf, curPoint, args)
 
 			curPoint.X = X
 			curPoint.Y = Y
@@ -875,13 +875,13 @@ func (this *SVGPath) applyTransformToPath(txf string, p map[string][][]string, a
 
 			curPoint.X = atof(cmd[3])
 			curPoint.Y = atof(cmd[4])
-			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+			X, Y = this.applyTransformToPoint(txf, curPoint, args)
 			cmd[3] = fmt.Sprint(X)
 			cmd[4] = fmt.Sprint(Y)
 
 			curPoint.X = atof(cmd[5])
 			curPoint.Y = atof(cmd[6])
-			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+			X, Y = this.applyTransformToPoint(txf, curPoint, args)
 
 			curPoint.X = X
 			curPoint.Y = Y
@@ -908,31 +908,33 @@ func (this *SVGPath) applyTransformToPath(txf string, p map[string][][]string, a
 			 * sense to scale, rotate, or skew it, but not translate it.
 			 */
 			if txf != `translate` {
-				curPoint.X = cmd[1]
-				curPoint.Y = cmd[2]
-				list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
-				cmd[1] = X
-				cmd[2] = Y
+				curPoint.X = atof(cmd[1])
+				curPoint.Y = atof(cmd[2])
+				X, Y := this.applyTransformToPoint(txf, curPoint, args)
+				cmd[1] = fmt.Sprint(X)
+				cmd[2] = fmt.Sprint(Y)
 			}
 
-			curPoint.X = cmd[6]
-			curPoint.Y = cmd[7]
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			curPoint.X = atof(cmd[6])
+			curPoint.Y = atof(cmd[7])
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
-			cmd[6] = X
-			cmd[7] = Y
+			cmd[6] = fmt.Sprint(X)
+			cmd[7] = fmt.Sprint(Y)
 
 			break
 		}
 	}
 }
 
-func (this *SVGPath) Render() {
-	startPoint = array_shift(this.points)
-	endPoint = this.points[count(this.points)-1]
+func (this *SVGPath) Render() string {
+	// FIXME(akavel): handle empty this.points
+	startPoint := this.points[0]
+	this.points = this.points[1:]
+	endPoint := this.points[len(this.points)-1]
 
-	out = "<g id=\"group" + this.name + "\">\n"
+	out := "<g id=\"group" + this.name + "\">\n"
 
 	/*
 	 * If someone has specified one of our special object types, we are going
@@ -940,80 +942,81 @@ func (this *SVGPath) Render() {
 	 * done otherwise, but we defer until here to do anything about it because
 	 * we need information about the object we're replacing.
 	 */
-	if isset(this.options[`a2s:type`]) &&
-		isset(CustomObjects_Objects[this.options[`a2s:type`]]) {
-		object = CustomObjects_Objects[this.options[`a2s:type`]]
+	// if `` != (this.options[`a2s:type`]) &&
+	// // isset(CustomObjects_Objects[this.options[`a2s:type`]]) {
+	// struct{}{} != (CustomObjects_Objects[this.options[`a2s:type`]]) {
+	// object := CustomObjects_Objects[this.options[`a2s:type`]]
 
-		/* Again, if no fill was specified, specify one. */
-		if !isset(this.options[`fill`]) {
-			this.options[`fill`] = `#fff`
-		}
+	// /* Again, if no fill was specified, specify one. */
+	// if `` == (this.options[`fill`]) {
+	// 	this.options[`fill`] = `#fff`
+	// }
 
-		/*
-		 * We don't care so much about the area, but we do care about the width
-		 * and height of the object. All of our "custom" objects are implemented
-		 * in 100x100 space, which makes the transformation marginally easier.
-		 */
-		minX = startPoint.X
-		maxX = minX
-		minY = startPoint.Y
-		maxY = minY
-		for _, p := range this.points {
-			if p.X < minX {
-				minX = p.X
-			} else if p.X > maxX {
-				maxX = p.X
-			}
-			if p.Y < minY {
-				minY = p.Y
-			} else if p.Y > maxY {
-				maxY = p.Y
-			}
-		}
+	// /*
+	//  * We don't care so much about the area, but we do care about the width
+	//  * and height of the object. All of our "custom" objects are implemented
+	//  * in 100x100 space, which makes the transformation marginally easier.
+	//  */
+	// minX := startPoint.X
+	// maxX := minX
+	// minY := startPoint.Y
+	// maxY := minY
+	// for _, p := range this.points {
+	// 	if p.X < minX {
+	// 		minX = p.X
+	// 	} else if p.X > maxX {
+	// 		maxX = p.X
+	// 	}
+	// 	if p.Y < minY {
+	// 		minY = p.Y
+	// 	} else if p.Y > maxY {
+	// 		maxY = p.Y
+	// 	}
+	// }
 
-		objW = maxX - minX
-		objH = maxY - minY
+	// objW := maxX - minX
+	// objH := maxY - minY
 
-		i = 0
-		for _, o := range object {
-			id = SVGPath_id()
-			out += "\t<path id=\"path" + this.name + "\" d=\""
+	// i := 0
+	// for _, o := range object {
+	// 	id = SVGPath_id()
+	// 	out += "\t<path id=\"path" + this.name + "\" d=\""
 
-			oW = o[`width`]
-			oH = o[`height`]
+	// 	oW = o[`width`]
+	// 	oH = o[`height`]
 
-			this.applyTransformToPath(`scale`, o, array(objW/oW, objH/oH))
-			this.applyTransformToPath(`translate`, o, array(minX, minY))
+	// 	this.applyTransformToPath(`scale`, o, array(objW/oW, objH/oH))
+	// 	this.applyTransformToPath(`translate`, o, array(minX, minY))
 
-			for _, cmd := range o[`path`] {
-				out += join(` `, cmd) + ` `
-			}
-			out += `" `
+	// 	for _, cmd := range o[`path`] {
+	// 		out += join(` `, cmd) + ` `
+	// 	}
+	// 	out += `" `
 
-			/* Don't add options to sub-paths */
-			if i < 1 {
-				for opt, val := range this.options {
-					if strpos(opt, `a2s:`, 0) == 0 {
-						continue
-					}
-					out += "opt=\"val\" "
-				}
-			}
-			i++
+	// 	/* Don't add options to sub-paths */
+	// 	if i < 1 {
+	// 		for opt, val := range this.options {
+	// 			if strpos(opt, `a2s:`, 0) == 0 {
+	// 				continue
+	// 			}
+	// 			out += "opt=\"val\" "
+	// 		}
+	// 	}
+	// 	i++
 
-			out += " />\n"
-		}
+	// 	out += " />\n"
+	// }
 
-		if count(this.text) > 0 {
-			for _, text := range this.text {
-				out += "\t" + text.Render() + "\n"
-			}
-		}
-		out += "</g>\n"
+	// if count(this.text) > 0 {
+	// 	for _, text := range this.text {
+	// 		out += "\t" + text.Render() + "\n"
+	// 	}
+	// }
+	// out += "</g>\n"
 
-		/* Bazinga. */
-		return out
-	}
+	// /* Bazinga. */
+	// return out
+	// }
 
 	/*
 	 * Nothing fancy here -- this is just rendering for our standard
@@ -1024,41 +1027,44 @@ func (this *SVGPath) Render() {
 	 * automatically if it is a closed shape. If we have a control point, we
 	 * have to go ahead and draw the curve.
 	 */
-	if startPoint.Flags & Point_CONTROL {
-		cX = startPoint.X
-		cY = startPoint.Y
-		sX = startPoint.X
-		sY = startPoint.Y + 10
-		eX = startPoint.X + 10
-		eY = startPoint.Y
+	var path string
+	if startPoint.Flags&Point_CONTROL != 0 {
+		cX := startPoint.X
+		cY := startPoint.Y
+		sX := startPoint.X
+		sY := startPoint.Y + 10
+		eX := startPoint.X + 10
+		eY := startPoint.Y
 
-		path = "M " + sX + " " + sY + " Q " + cX + " " + cY + " " + eX + " " + eY + " "
+		path = "M " + fmt.Sprint(sX) + " " + fmt.Sprint(sY) + " Q " + fmt.Sprint(cX) + " " + fmt.Sprint(cY) + " " + fmt.Sprint(eX) + " " + fmt.Sprint(eY) + " "
 	} else {
-		path = "M " + startPoint.X + " " + startPoint.Y + " "
+		path = "M " + fmt.Sprint(startPoint.X) + " " + fmt.Sprint(startPoint.Y) + " "
 	}
 
-	prevP = startPoint
-	bound = count(this.points)
+	prevP := startPoint
+	bound := len(this.points)
 	for i := 0; i < bound; i++ {
-		p = this.points[i]
+		p := this.points[i]
 
 		/*
 		 * Handle quadratic Bezier curves. NOTE: This algorithm for drawing
 		 * the curves only works if the shapes are drawn in a clockwise
 		 * manner.
 		 */
-		if p.Flags & Point_CONTROL {
+		if p.Flags&Point_CONTROL != 0 {
 			/* Our control point is always the original corner */
-			cX = p.X
-			cY = p.Y
+			cX := p.X
+			cY := p.Y
 
 			/* Need next point to determine which way to turn */
-			if i == count(this.points)-1 {
+			var nP Point
+			if i == len(this.points)-1 {
 				nP = startPoint
 			} else {
 				nP = this.points[i+1]
 			}
 
+			var sX, sY, eX, eY Coord
 			if prevP.X == p.X {
 				/*
 				 * If we are on the same vertical axis, our starting X coordinate
@@ -1097,31 +1103,31 @@ func (this *SVGPath) Render() {
 				}
 			}
 
-			path += "L " + sX + " " + sY + " Q " + cX + " " + cY + " " + eX + " " + eY + " "
+			path += "L " + fmt.Sprint(sX) + " " + fmt.Sprint(sY) + " Q " + fmt.Sprint(cX) + " " + fmt.Sprint(cY) + " " + fmt.Sprint(eX) + " " + fmt.Sprint(eY) + " "
 		} else {
 			/* The excruciating difficulty of drawing a straight line */
-			path += "L " + p.X + " " + p.Y + " "
+			path += "L " + fmt.Sprint(p.X) + " " + fmt.Sprint(p.Y) + " "
 		}
 
 		prevP = p
 	}
 
 	if this.IsClosed() {
-		path += 'Z'
+		path += `Z`
 	}
 
-	id = SVGPath_id()
+	// FIXME(akavel): id = SVGPath_id()
 
 	/* Add markers if necessary. */
-	if startPoint.Flags & Point_SMARKER {
+	if startPoint.Flags&Point_SMARKER != 0 {
 		this.options["marker-start"] = "url(#Pointer)"
-	} else if startPoint.Flags & Point_IMARKER {
+	} else if startPoint.Flags&Point_IMARKER != 0 {
 		this.options["marker-start"] = "url(#iPointer)"
 	}
 
-	if endPoint.Flags & Point_SMARKER {
+	if endPoint.Flags&Point_SMARKER != 0 {
 		this.options["marker-end"] = "url(#Pointer)"
-	} else if endPoint.Flags & Point_IMARKER {
+	} else if endPoint.Flags&Point_IMARKER != 0 {
 		this.options["marker-end"] = "url(#iPointer)"
 	}
 
@@ -1130,7 +1136,7 @@ func (this *SVGPath) Render() {
 	 * terrible with the drop-shadow effect. Any objects that aren't filled
 	 * automatically get a white fill.
 	 */
-	if this.IsClosed() && !isset(this.options[`fill`]) {
+	if this.IsClosed() && `` == (this.options[`fill`]) {
 		this.options[`fill`] = `#fff`
 	}
 
@@ -1143,35 +1149,43 @@ func (this *SVGPath) Render() {
 	}
 	out += "d=\"" + path + "\" />\n"
 
-	if count(this.text) > 0 {
+	if len(this.text) > 0 {
 		for _, text := range this.text {
 			text.SetID(this.name)
 			out += "\t" + text.Render() + "\n"
 		}
 	}
 
-	bound = count(this.ticks)
+	bound = len(this.ticks)
 	for i := 0; i < bound; i++ {
-		t = this.ticks[i]
-		if t.Flags & Point_DOT {
-			out += "<circle cx=\"" + t.X + "\" cy=\"" + t.Y + "\" r=\"3\" fill=\"black\" />"
-		} else if t.Flags & Point_TICK {
-			x1 = t.X - 4
-			y1 = t.Y - 4
-			x2 = t.X + 4
-			y2 = t.Y + 4
-			out += "<line x1=\"x1\" y1=\"y1\" x2=\"x2\" y2=\"y2\" stroke-width=\"1\" />"
+		t := this.ticks[i]
+		if t.Flags&Point_DOT != 0 {
+			out += "<circle cx=\"" + fmt.Sprint(t.X) + "\" cy=\"" + fmt.Sprint(t.Y) + "\" r=\"3\" fill=\"black\" />"
+		} else if t.Flags&Point_TICK != 0 {
+			x1 := t.X - 4
+			y1 := t.Y - 4
+			x2 := t.X + 4
+			y2 := t.Y + 4
+			out += fmt.Sprintf("<line x1=\"%v\" y1=\"%v\" x2=\"%v\" y2=\"%v\" stroke-width=\"1\" />", x1, y1, x2, y2)
 
 			x1 = t.X + 4
 			y1 = t.Y - 4
 			x2 = t.X - 4
 			y2 = t.Y + 4
-			out += "<line x1=\"x1\" y1=\"y1\" x2=\"x2\" y2=\"y2\" stroke-width=\"1\" />"
+			out += fmt.Sprintf("<line x1=\"%v\" y1=\"%v\" x2=\"%v\" y2=\"%v\" stroke-width=\"1\" />", x1, y1, x2, y2)
 		}
 	}
 
 	out += "</g>\n"
 	return out
+}
+
+var _SVGText_id = 0
+
+func SVGText_id() string {
+	s := fmt.Sprint(_SVGText_id)
+	_SVGText_id++
+	return s
 }
 
 /*
@@ -1180,11 +1194,9 @@ func (this *SVGPath) Render() {
 type SVGText struct {
 	options map[string]string
 	string_ string
-	point   *Point
+	point   Point
 	name    string
 }
-
-var SVGText_id = 0
 
 func NewSVGText(X, Y Coord) *SVGText {
 	this := &SVGText{}
@@ -1214,7 +1226,7 @@ func (this *SVGText) SetString(string_ string) {
 	this.string_ = string_
 }
 
-func (this *SVGText) Render() {
+func (this *SVGText) Render() string {
 	out = "<text X=\"" + this.point.X + "\" Y=\"" + this.point.Y + "\" id=\"text" + this.name + "\" "
 	for opt, val := range this.options {
 		if strpos(opt, `a2s:`, 0) == 0 {
