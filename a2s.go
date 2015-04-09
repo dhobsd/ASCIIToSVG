@@ -30,9 +30,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"html"
 	"math"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -56,6 +59,12 @@ func atof(s string) Coord {
 		panic(err.Error())
 	}
 	return Coord(f)
+}
+func json_decode(buf []byte, _ bool) map[string]string {
+	result := map[string]string{}
+	// FIXME(akavel): keep error and do something with it (log?)
+	json.Unmarshal(buf, &result)
+	return result
 }
 
 type Coord float64
@@ -1247,7 +1256,7 @@ func (this *SVGText) Render() string {
  * above classes.
  */
 type ASCIIToSVG struct {
-	// FIXME(akavel): BlurDropShadow = true;
+	DisableBlurDropShadow bool
 	// FIXME(akavel): FontFamily = "Consolas,Monaco,Anonymous Pro,Anonymous,Bitstream Sans Mono,monospace";
 
 	rawData []byte
@@ -1255,6 +1264,8 @@ type ASCIIToSVG struct {
 
 	svgObjects   *SVGGroup
 	clearCorners [][2]int
+
+	commands map[string]map[string]string
 }
 
 /* Directions for traversing lines in our grid */
@@ -1267,7 +1278,8 @@ const ASCIIToSVG_DIR_RIGHT ASCIIToSVG_DIR = 0x8
 const ASCIIToSVG_DIR_NE ASCIIToSVG_DIR = 0x10
 const ASCIIToSVG_DIR_SE ASCIIToSVG_DIR = 0x20
 
-func (this *ASCIIToSVG) __construct(data []byte) {
+func NewASCIIToSVG(data []byte) *ASCIIToSVG {
+	this := &ASCIIToSVG{}
 	/* For debugging purposes */
 	this.rawData = data
 
@@ -1282,27 +1294,24 @@ func (this *ASCIIToSVG) __construct(data []byte) {
 	 *
 	 * The JSON blob may not contain objects as values or the regex will break.
 	 */
-	this.commands = array()
-	preg_match_all(`/^\[([^\]]+)\]:?\s+({[^}]+?})/ims`, data, matches)
-	bound = count(matches[1])
-	for i := 0; i < bound; i++ {
-		this.commands[matches[1][i]] = json_decode(matches[2][i], true)
+	this.commands = map[string]map[string]string{}
+	matches := regexp.MustCompile(`(?ms)`+`^\[`+`([^\]]+)`+`\]`+`:?`+`\s+`+`({[^}]+?})`).FindAllSubmatch(data, -1)
+	for _, match := range matches {
+		this.commands[string(match[1])] = json_decode(match[2], true)
 	}
-
-	data = preg_replace(`/^\[([^\]]+)\](:?)\s+.*/ims`, ``, data)
+	data = regexp.MustCompile(`(?ms)`+`^\[`+`([^\]]+)`+`\]`+`(:?)`+`\s+`+`.*`).ReplaceAll(data, nil)
 
 	/*
 	 * Treat our ASCII field as a grid and store each character as a point in
 	 * that grid. The (0, 0) coordinate on this grid is top-left, just as it
 	 * is in images.
 	 */
-	this.grid = explode("\n", data)
-
-	for k, line := range this.grid {
-		this.grid[k] = str_split(line)
+	for _, line := range bytes.Split(data, []byte("\n")) {
+		this.grid = append(this.grid, bytes.Runes(line))
 	}
 
 	this.svgObjects = NewSVGGroup()
+	return this
 }
 
 /*
@@ -1310,39 +1319,39 @@ func (this *ASCIIToSVG) __construct(data []byte) {
  * the default scale of one grid space on the X and Y axes.
  */
 func (this *ASCIIToSVG) SetDimensionScale(X, Y Coord) {
-	o = Scale_GetInstance()
+	o := Scale_GetInstance()
 	o.SetScale(X, Y)
 }
 
-func (this *ASCIIToSVG) Dump() {
-	var_export(this)
-}
+// func (this *ASCIIToSVG) Dump() {
+// 	var_export(this)
+// }
 
 /* Render out what we've done!  */
-func (this *ASCIIToSVG) Render() {
-	o = Scale_GetInstance()
+func (this *ASCIIToSVG) Render() string {
+	o := Scale_GetInstance()
 
 	/* Figure out how wide we need to make the canvas */
-	canvasWidth = 0
+	canvasWidth := Coord(0)
 	for _, line := range this.grid {
-		if count(line) > canvasWidth {
-			canvasWidth = count(line)
+		if Coord(len(line)) > canvasWidth {
+			canvasWidth = Coord(len(line))
 		}
 	}
 
-	canvasWidth = canvasWidth*o.XScale + 10
-	canvasHeight = count(this.grid) * o.YScale
+	canvasWidth = Coord(canvasWidth)*o.XScale + 10
+	canvasHeight := Coord(len(this.grid)) * o.YScale
 
 	/*
 	 * Boilerplate header with definitions that we might be using for markers
 	 * and drop shadows.
 	 */
-	out = `
+	out := `
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Created with ASCIIToSVG (http://9vx.org/~dho/a2s/) -.
-<svg width="` + canvasWidth + `px" height="` + canvasHeight + `px" version="1.1"
+<svg width="` + fmt.Sprint(canvasWidth) + `px" height="` + fmt.Sprint(canvasHeight) + `px" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
     <filter id="dsFilterNoBlur" width="150%" height="150%">
@@ -1424,25 +1433,25 @@ func (this *ASCIIToSVG) parseBoxes() {
 	for row, line := range this.grid {
 		for col, char := range line {
 			if this.isCorner(char) {
-				path = NewSVGPath()
+				path := NewSVGPath()
 
-				if char == '.' || char == "'" {
-					path.AddPoint(col, row, Point_CONTROL)
+				if char == '.' || char == '\'' {
+					path.AddPoint(Coord(col), Coord(row), Point_CONTROL)
 				} else {
-					path.AddPoint(col, row)
+					path.AddPoint(Coord(col), Coord(row), Point_POINT)
 				}
 
 				/*
 				 * The wall follower is a left-turning, marking follower. See that
 				 * function for more information on how it works.
 				 */
-				this.wallFollow(path, row, col+1, ASCIIToSVG_DIR_RIGHT)
+				this.wallFollow(path, row, col+1, ASCIIToSVG_DIR_RIGHT, nil, 0)
 
 				/* We only care about closed polygons */
 				if path.IsClosed() {
 					path.OrderPoints()
 
-					skip = false
+					skip := false
 					/*
 					 * The walking code can find the same box from a different edge:
 					 *
@@ -1454,16 +1463,16 @@ func (this *ASCIIToSVG) parseBoxes() {
 					 * so ignore adding a box that we've already added.
 					 */
 					for _, box := range this.svgObjects.GetGroup(`boxes`) {
-						bP = box.GetPoints()
-						pP = path.GetPoints()
-						pPoints = count(pP)
-						shared = 0
+						bP := box.(*SVGPath).GetPoints()
+						pP := path.GetPoints()
+						pPoints := len(pP)
+						shared := 0
 
 						/*
 						 * If the boxes don't have the same number of edges, they
 						 * obviously cannot be the same box.
 						 */
-						if count(bP) != pPoints {
+						if len(bP) != pPoints {
 							continue
 						}
 
@@ -1478,7 +1487,7 @@ func (this *ASCIIToSVG) parseBoxes() {
 						}
 
 						/* If all the edges are in common, it's the same shape. */
-						if shared == count(bP) {
+						if shared == len(bP) {
 							skip = true
 							break
 						}
@@ -1486,13 +1495,13 @@ func (this *ASCIIToSVG) parseBoxes() {
 
 					if skip == false {
 						/* Search for any references for styling this polygon; add it */
-						if this.BlurDropShadow {
-							path.SetOption(`filter`, `url(#dsFilter)`)
-						} else {
+						if this.DisableBlurDropShadow {
 							path.SetOption(`filter`, `url(#dsFilterNoBlur)`)
+						} else {
+							path.SetOption(`filter`, `url(#dsFilter)`)
 						}
 
-						name = this.findCommands(path)
+						name := this.findCommands(path)
 
 						if name != `` {
 							path.SetID(name)
@@ -1511,7 +1520,7 @@ func (this *ASCIIToSVG) parseBoxes() {
 	 * corner characters because these might be shared by lines.
 	 */
 	for _, box := range this.svgObjects.GetGroup(`boxes`) {
-		this.clearObject(box)
+		this.clearObject(box.(*SVGPath))
 	}
 
 	/* Anything after this is not a subgroup */
@@ -1537,18 +1546,18 @@ func (this *ASCIIToSVG) parseLines() {
 	this.svgObjects.SetOption(`fill`, `none`)
 
 	/* The grid is not uniform, so we need to determine the longest row. */
-	maxCols = 0
-	bound = count(this.grid)
+	maxCols := 0
+	bound := len(this.grid)
 	for r := 0; r < bound; r++ {
-		maxCols = max(maxCols, count(this.grid[r]))
+		maxCols = max(maxCols, len(this.grid[r]))
 	}
 
 	for c := 0; c < maxCols; c++ {
 		for r := 0; r < bound; r++ {
 			/* This gets set if we find a line-start here. */
-			dir = false
+			dir := false
 
-			line = NewSVGPath()
+			line := NewSVGPath()
 
 			/*
 			 * Since the column count isn't uniform, don't attempt to handle any
@@ -1558,7 +1567,7 @@ func (this *ASCIIToSVG) parseLines() {
 				continue
 			}
 
-			char = this.getChar(r, c)
+			char := this.getChar(r, c)
 			switch char {
 			/*
 			 * Do marker characters first. These are the easiest because they are
@@ -1629,7 +1638,7 @@ func (this *ASCIIToSVG) parseLines() {
 			 */
 			case ':':
 				line.SetOption(`stroke-dasharray`, `5 5`)
-				/* FALLTHROUGH */
+				fallthrough
 			case '|':
 				n = this.getChar(r-1, c)
 				s = this.getChar(r+1, c)
@@ -1652,7 +1661,7 @@ func (this *ASCIIToSVG) parseLines() {
 			 */
 			case '=':
 				line.SetOption(`stroke-dasharray`, `5 5`)
-				/* FALLTHROUGH */
+				fallthrough
 			case '-':
 				w = this.getChar(r, c-1)
 				e = this.getChar(r, c+1)
@@ -1695,8 +1704,7 @@ func (this *ASCIIToSVG) parseLines() {
 			 * character in both the horizontal and vertical case. And then
 			 * mentally overlay them and consider that :).
 			 */
-			case '+':
-			case '#':
+			case '+', '#':
 				ne = this.getChar(r-1, c+1)
 				se = this.getChar(r+1, c+1)
 				if ne == '/' || ne == '^' || ne == '>' {
@@ -1704,10 +1712,9 @@ func (this *ASCIIToSVG) parseLines() {
 				} else if se == "\\" || se == "v" || se == '>' {
 					dir = ASCIIToSVG_DIR_SE
 				}
-				/* FALLTHROUGH */
+				fallthrough
 
-			case '.':
-			case "'":
+			case '.', '\'':
 				n = this.getChar(r-1, c)
 				w = this.getChar(r, c-1)
 				s = this.getChar(r+1, c)
@@ -2143,6 +2150,9 @@ func (this *ASCIIToSVG) walk(path *SVGPath, row, col int, dir ASCIIToSVG_DIR, d 
  */
 // FIXME(akavel): func (this *ASCIIToSVG) wallFollow(path, r, c, dir, bucket = array(), d = 0) {
 func (this *ASCIIToSVG) wallFollow(path *SVGPath, r, c int, dir ASCIIToSVG_DIR, bucket map[string]int, d int) {
+	if bucket == nil {
+		bucket = map[string]int{}
+	}
 	d++
 
 	if dir == ASCIIToSVG_DIR_RIGHT || dir == ASCIIToSVG_DIR_LEFT {
@@ -2183,8 +2193,7 @@ func (this *ASCIIToSVG) wallFollow(path *SVGPath, r, c int, dir ASCIIToSVG_DIR, 
 		}
 
 		switch cur {
-		case '.':
-		case "'":
+		case '.', '\'':
 			pointExists = path.AddPoint(c, r, Point_CONTROL)
 			break
 
@@ -2443,7 +2452,7 @@ func (this *ASCIIToSVG) clearObject(obj *SVGPath) {
  * gives you a good method for specifying *tons* of information about the
  * object.
  */
-func (this *ASCIIToSVG) findCommands(box *SVGPath) {
+func (this *ASCIIToSVG) findCommands(box *SVGPath) string {
 	points = box.GetPoints()
 	sX = points[0].GridX + 1
 	sY = points[0].GridY + 1
@@ -2511,7 +2520,7 @@ func (this *ASCIIToSVG) getChar(row, col int) rune {
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
-func (this *ASCIIToSVG) isBoxEdge(char rune, dir ASCIIToSVG_DIR) {
+func (this *ASCIIToSVG) isBoxEdge(char rune, dir ASCIIToSVG_DIR) bool {
 	if dir == nil {
 		return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+'
 	} else if dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN {
@@ -2522,7 +2531,7 @@ func (this *ASCIIToSVG) isBoxEdge(char rune, dir ASCIIToSVG_DIR) {
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isEdge(char, dir = nil) {
-func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) {
+func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) bool {
 	if char == 'o' || char == 'X' {
 		return true
 	}
@@ -2540,19 +2549,19 @@ func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) {
 	}
 }
 
-func (this *ASCIIToSVG) isBoxCorner(char rune) {
+func (this *ASCIIToSVG) isBoxCorner(char rune) bool {
 	return char == '.' || char == "'" || char == '#'
 }
 
-func (this *ASCIIToSVG) isCorner(char rune) {
+func (this *ASCIIToSVG) isCorner(char rune) bool {
 	return char == '.' || char == "'" || char == '#' || char == '+'
 }
 
-func (this *ASCIIToSVG) isMarker(char rune) {
+func (this *ASCIIToSVG) isMarker(char rune) bool {
 	return char == 'v' || char == '^' || char == '<' || char == '>'
 }
 
-func (this *ASCIIToSVG) isTick(char rune) {
+func (this *ASCIIToSVG) isTick(char rune) bool {
 	return char == 'o' || char == 'X'
 }
 
