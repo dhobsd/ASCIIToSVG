@@ -32,6 +32,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -47,6 +48,13 @@ func strpos(haystack, needle string, offset int) int {
 }
 func str_replace(search, replace, subject string) string {
 	return strings.Replace(subject, search, replace, -1)
+}
+func atof(s string) Coord {
+	f, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		panic(err.Error())
+	}
+	return Coord(f)
 }
 
 type Coord float64
@@ -705,10 +713,10 @@ func (this *SVGPath) applyTransformToPoint(txf string, p Point, args []Coord) (C
  * Apply the transformation function txf to all coordinates on path p
  * providing args as arguments to the transformation function.
  */
-func (this *SVGPath) applyTransformToPath(txf string, p map[string][]string, args []float64) {
+func (this *SVGPath) applyTransformToPath(txf string, p map[string][][]string, args []Coord) {
 	pathCmds := len(p[`path`])
 	curPoint := NewPoint(0, 0)
-	var prevType, curType byte
+	var prevType, curType string
 
 	for i := 0; i < pathCmds; i++ {
 		cmd := p[`path`][i]
@@ -718,183 +726,183 @@ func (this *SVGPath) applyTransformToPath(txf string, p map[string][]string, arg
 
 		switch curType {
 		/* Can't transform those */
-		case 'z':
-		case 'Z':
+		case `z`:
+		case `Z`:
 
-		case 'm':
-			if prevType != 0 {
-				curPoint.X += cmd[1]
-				curPoint.Y += cmd[2]
+		case `m`:
+			if prevType != `` {
+				curPoint.X += atof(cmd[1])
+				curPoint.Y += atof(cmd[2])
 
-				list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+				X, Y := this.applyTransformToPoint(txf, curPoint, args)
 				curPoint.X = X
 				curPoint.Y = Y
 
-				cmd[1] = X
-				cmd[2] = Y
+				cmd[1] = fmt.Sprint(X)
+				cmd[2] = fmt.Sprint(Y)
 			} else {
-				curPoint.X = cmd[1]
-				curPoint.Y = cmd[2]
+				curPoint.X = atof(cmd[1])
+				curPoint.Y = atof(cmd[2])
 
-				list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+				X, Y := this.applyTransformToPoint(txf, curPoint, args)
 				curPoint.X = X
 				curPoint.Y = Y
 
-				cmd[1] = X
-				cmd[2] = Y
-				curType = 'l'
+				cmd[1] = fmt.Sprint(X)
+				cmd[2] = fmt.Sprint(Y)
+				curType = `l`
 			}
 
 			break
 
-		case 'M':
-			curPoint.X = cmd[1]
-			curPoint.Y = cmd[2]
+		case `M`:
+			curPoint.X = atof(cmd[1])
+			curPoint.Y = atof(cmd[2])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = X
-			cmd[2] = Y
+			cmd[1] = fmt.Sprint(X)
+			cmd[2] = fmt.Sprint(Y)
 
-			if prevType == nil {
-				curType = 'L'
+			if prevType == `` {
+				curType = `L`
 			}
 			break
 
-		case 'l':
-			curPoint.X += cmd[1]
-			curPoint.Y += cmd[2]
+		case `l`:
+			curPoint.X += atof(cmd[1])
+			curPoint.Y += atof(cmd[2])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = X
-			cmd[2] = Y
+			cmd[1] = fmt.Sprint(X)
+			cmd[2] = fmt.Sprint(Y)
 
 			break
 
-		case 'L':
-			curPoint.X = cmd[1]
-			curPoint.Y = cmd[2]
+		case `L`:
+			curPoint.X = atof(cmd[1])
+			curPoint.Y = atof(cmd[2])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = X
-			cmd[2] = Y
+			cmd[1] = fmt.Sprint(X)
+			cmd[2] = fmt.Sprint(Y)
 
 			break
 
-		case 'v':
-			curPoint.Y += cmd[1]
+		case `v`:
+			curPoint.Y += atof(cmd[1])
 			curPoint.X += 0
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = Y
+			cmd[1] = fmt.Sprint(Y)
 
 			break
 
-		case 'V':
-			curPoint.Y = cmd[1]
+		case `V`:
+			curPoint.Y = atof(cmd[1])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = Y
+			cmd[1] = fmt.Sprint(Y)
 
 			break
 
-		case 'h':
-			curPoint.X += cmd[1]
+		case `h`:
+			curPoint.X += atof(cmd[1])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = X
+			cmd[1] = fmt.Sprint(X)
 
 			break
 
-		case 'H':
-			curPoint.X = cmd[1]
+		case `H`:
+			curPoint.X = atof(cmd[1])
 
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 			curPoint.X = X
 			curPoint.Y = Y
 
-			cmd[1] = X
+			cmd[1] = fmt.Sprint(X)
 
 			break
 
-		case 'c':
+		case `c`:
 			tP = NewPoint(0, 0)
-			tP.X = curPoint.X + cmd[1]
-			tP.Y = curPoint.Y + cmd[2]
-			list(X, Y) = this.applyTransformToPoint(txf, tP, args)
-			cmd[1] = X
-			cmd[2] = Y
+			tP.X = curPoint.X + atof(cmd[1])
+			tP.Y = curPoint.Y + atof(cmd[2])
+			X, Y := this.applyTransformToPoint(txf, tP, args)
+			cmd[1] = fmt.Sprint(X)
+			cmd[2] = fmt.Sprint(Y)
 
-			tP.X = curPoint.X + cmd[3]
-			tP.Y = curPoint.Y + cmd[4]
-			list(X, Y) = this.applyTransformToPoint(txf, tP, args)
-			cmd[3] = X
-			cmd[4] = Y
+			tP.X = curPoint.X + atof(cmd[3])
+			tP.Y = curPoint.Y + atof(cmd[4])
+			X, Y := this.applyTransformToPoint(txf, tP, args)
+			cmd[3] = fmt.Sprint(X)
+			cmd[4] = fmt.Sprint(Y)
 
-			curPoint.X += cmd[5]
-			curPoint.Y += cmd[6]
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
-
-			curPoint.X = X
-			curPoint.Y = Y
-			cmd[5] = X
-			cmd[6] = Y
-
-			break
-		case 'C':
-			curPoint.X = cmd[1]
-			curPoint.Y = cmd[2]
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
-			cmd[1] = X
-			cmd[2] = Y
-
-			curPoint.X = cmd[3]
-			curPoint.Y = cmd[4]
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
-			cmd[3] = X
-			cmd[4] = Y
-
-			curPoint.X = cmd[5]
-			curPoint.Y = cmd[6]
-			list(X, Y) = this.applyTransformToPoint(txf, curPoint, args)
+			curPoint.X += atof(cmd[5])
+			curPoint.Y += atof(cmd[6])
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
 
 			curPoint.X = X
 			curPoint.Y = Y
-			cmd[5] = X
-			cmd[6] = Y
+			cmd[5] = fmt.Sprint(X)
+			cmd[6] = fmt.Sprint(Y)
+
+			break
+		case `C`:
+			curPoint.X = atof(cmd[1])
+			curPoint.Y = atof(cmd[2])
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+			cmd[1] = fmt.Sprint(X)
+			cmd[2] = fmt.Sprint(Y)
+
+			curPoint.X = atof(cmd[3])
+			curPoint.Y = atof(cmd[4])
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+			cmd[3] = fmt.Sprint(X)
+			cmd[4] = fmt.Sprint(Y)
+
+			curPoint.X = atof(cmd[5])
+			curPoint.Y = atof(cmd[6])
+			X, Y := this.applyTransformToPoint(txf, curPoint, args)
+
+			curPoint.X = X
+			curPoint.Y = Y
+			cmd[5] = fmt.Sprint(X)
+			cmd[6] = fmt.Sprint(Y)
 
 			break
 
-		case 's':
-		case 'S':
+		case `s`:
+		case `S`:
 
-		case 'q':
-		case 'Q':
+		case `q`:
+		case `Q`:
 
-		case 't':
-		case 'T':
+		case `t`:
+		case `T`:
 
-		case 'a':
+		case `a`:
 			break
 
-		case 'A':
+		case `A`:
 			/*
 			 * This radius is relative to the start and end points, so it makes
 			 * sense to scale, rotate, or skew it, but not translate it.
