@@ -29,12 +29,27 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"strings"
+)
 
 // include 'svg-path.lex.php';
 // include 'colors.php';
 
-type Coord float32
+func strpos(haystack, needle string, offset int) int {
+	i := strings.Index(haystack[offset:], needle)
+	if i == -1 {
+		return -1
+	}
+	return offset + i
+}
+func str_replace(search, replace, subject string) string {
+	return strings.Replace(subject, search, replace, -1)
+}
+
+type Coord float64
 
 /*
  * Scale is a singleton class that is instantiated to apply scale
@@ -97,108 +112,107 @@ var CustomObjects_LoadCacheFn func() CustomObjectsType = nil
 var CustomObjects_StorCacheFn func(CustomObjectsType) = nil
 var CustomObjects_LoadObjsFn func() CustomObjectsType = nil // TODO(akavel): ?
 
-func CustomObjects_LoadObjects() {
-	cacheFile = getenv("HOME") + "/.a2s/objcache"
-	dir = getenv("HOME") + "/.a2s/objects"
+// func CustomObjects_LoadObjects() {
+//   cacheFile := os.Getenv("HOME") + "/.a2s/objcache"
+//   dir := os.Getenv("HOME") + "/.a2s/objects"
 
-	if is_callable(CustomObjects_LoadCacheFn) {
-		/*
-		 * Should return exactly what was given to the storCacheFn when it was
-		 * last called, or nil if nothing can be loaded.
-		 */
-		fn = CustomObjects_LoadCacheFn
-		CustomObjects_Objects = fn()
-		return
-	} else {
-		if is_readable(cacheFile) && is_readable(dir) {
-			cacheTime = filemtime(cacheFile)
+// 	if nil!=(CustomObjects_LoadCacheFn) {
+// 		/*
+// 		 * Should return exactly what was given to the storCacheFn when it was
+// 		 * last called, or nil if nothing can be loaded.
+// 		 */
+//      fn := CustomObjects_LoadCacheFn
+// 		CustomObjects_Objects = fn()
+// 		return
+// 	}
+// 		if is_readable(cacheFile) && is_readable(dir) {
+// 			cacheTime = filemtime(cacheFile)
 
-			if filemtime(dir) <= filemtime(cacheFile) {
-				CustomObjects_Objects = unserialize(file_get_contents(cacheFile))
-				return
-			}
-		} else if file_exists(cacheFile) {
-			return
-		}
-	}
+// 			if filemtime(dir) <= filemtime(cacheFile) {
+// 				CustomObjects_Objects = unserialize(file_get_contents(cacheFile))
+// 				return
+// 			}
+// 		} else if file_exists(cacheFile) {
+// 			return
+// 		}
 
-	if is_callable(CustomObjects_LoadObjsFn) {
-		/*
-		 * Returns an array of arrays of path information. The innermost arrays
-		 * (containing the path information) contain the path name, the width of
-		 * the bounding box, the height of the bounding box, and the path
-		 * command. This interface does *not* want the path's XML tag. An array
-		 * returned from here containing two objects that each have 1 line would
-		 * look like:
-		 *
-		 * array (
-		 *   array (
-		 *     name => 'pathA',
-		 *     paths => array (
-		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 0 L 10 10'),
-		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 10 L 10 0'),
-		 *     ),
-		 *   ),
-		 *   array (
-		 *     name => 'pathB',
-		 *     paths => array (
-		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 5 L 5 10'),
-		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 5 10 L 10 5'),
-		 *     ),
-		 *   ),
-		 * );
-		 */
-		fn = CustomObjects_LoadObjsFn
-		objs = fn()
+// 	if nil!=(CustomObjects_LoadObjsFn) {
+// 		/*
+// 		 * Returns an array of arrays of path information. The innermost arrays
+// 		 * (containing the path information) contain the path name, the width of
+// 		 * the bounding box, the height of the bounding box, and the path
+// 		 * command. This interface does *not* want the path's XML tag. An array
+// 		 * returned from here containing two objects that each have 1 line would
+// 		 * look like:
+// 		 *
+// 		 * array (
+// 		 *   array (
+// 		 *     name => 'pathA',
+// 		 *     paths => array (
+// 		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 0 L 10 10'),
+// 		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 10 L 10 0'),
+// 		 *     ),
+// 		 *   ),
+// 		 *   array (
+// 		 *     name => 'pathB',
+// 		 *     paths => array (
+// 		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 0 5 L 5 10'),
+// 		 *       array ('width' => 10, 'height' => 10, 'path' => 'M 5 10 L 10 5'),
+// 		 *     ),
+// 		 *   ),
+// 		 * );
+// 		 */
+// 		fn = CustomObjects_LoadObjsFn
+// 		objs = fn()
 
-		i = 0
-		for _, obj := range objs {
-			for _, path := range obj["paths"] {
-				CustomObjects_Objects[obj["name"]][i]["width"] = path["width"]
-				CustomObjects_Objects[obj["name"]][i]["height"] = path["height"]
-				CustomObjects_Objects[obj["name"]][i]["path"] =
-					CustomObjects_parsePath(path["path"])
-				i++
-			}
-		}
-	} else {
-		ents = scandir(dir)
-		for _, ent := range ents {
-			file = dir + "/" + ent
-			base = substr(ent, 0, -5)
-			if substr(ent, -5) == ".path" && is_readable(file) {
-				if isset(CustomObjects_Objects[base]) &&
-					filemtime(file) <= CustomObjects_cacheTime {
-					continue
-				}
+// 		i = 0
+// 		for _, obj := range objs {
+// 			for _, path := range obj["paths"] {
+// 				CustomObjects_Objects[obj["name"]][i]["width"] = path["width"]
+// 				CustomObjects_Objects[obj["name"]][i]["height"] = path["height"]
+// 				CustomObjects_Objects[obj["name"]][i]["path"] =
+// 					CustomObjects_parsePath(path["path"])
+// 				i++
+// 			}
+// 		}
+// 	} else {
+// 		ents = scandir(dir)
+// 		for _, ent := range ents {
+// 			file = dir + "/" + ent
+// 			base = substr(ent, 0, -5)
+// 			if substr(ent, -5) == ".path" && is_readable(file) {
+// 				if isset(CustomObjects_Objects[base]) &&
+// 					filemtime(file) <= CustomObjects_cacheTime {
+// 					continue
+// 				}
 
-				lines = file(file)
+// 				lines = file(file)
 
-				i = 0
-				for _, line := range lines {
-					preg_match(`/width="(\d+)/`, line, m)
-					width = m[1]
-					preg_match(`/height="(\d+)/`, line, m)
-					height = m[1]
-					preg_match(`/d="([^"]+)"/`, line, m)
-					path = m[1]
+// 				i = 0
+// 				for _, line := range lines {
+// 					preg_match(`/width="(\d+)/`, line, m)
+// 					width = m[1]
+// 					preg_match(`/height="(\d+)/`, line, m)
+// 					height = m[1]
+// 					preg_match(`/d="([^"]+)"/`, line, m)
+// 					path = m[1]
 
-					CustomObjects_Objects[base][i][`width`] = width
-					CustomObjects_Objects[base][i][`height`] = height
-					CustomObjects_Objects[base][i][`path`] = CustomObjects_parsePath(path)
-					i++
-				}
-			}
-		}
-	}
+// 					CustomObjects_Objects[base][i][`width`] = width
+// 					CustomObjects_Objects[base][i][`height`] = height
+// 					CustomObjects_Objects[base][i][`path`] = CustomObjects_parsePath(path)
+// 					i++
+// 				}
+// 			}
+// 		}
+// 	}
 
-	if is_callable(CustomObjects_StorCacheFn) {
-		fn = CustomObjects_StorCacheFn
-		fn(CustomObjects_Objects)
-	} else {
-		file_put_contents(cacheFile, serialize(CustomObjects_Objects))
-	}
-}
+// 	if is_callable(CustomObjects_StorCacheFn) {
+// 		fn = CustomObjects_StorCacheFn
+// 		fn(CustomObjects_Objects)
+// 	} else {
+// 		file_put_contents(cacheFile, serialize(CustomObjects_Objects))
+// 	}
+// }
 
 // func CustomObjects_parsePath(path) {
 //   stream = fopen("data://text/plain,"+path, 'r');
@@ -256,7 +270,7 @@ func NewPoint(X, Y Coord) Point {
 	this := Point{}
 	this.Flags = 0
 
-	s = Scale_GetInstance()
+	s := Scale_GetInstance()
 	this.X = (X * s.XScale) + (s.XScale / 2)
 	this.Y = (Y * s.YScale) + (s.YScale / 2)
 
@@ -265,7 +279,9 @@ func NewPoint(X, Y Coord) Point {
 	return this
 }
 
-type Object struct{}
+type Object interface {
+	Render() string
+}
 
 /*
  * Groups objects together and sets common properties for the objects in the
@@ -278,20 +294,22 @@ type SVGGroup struct {
 	options    map[string]map[string]string
 }
 
-func (this *SVGGroup) __construct() {
-	this.groups = array()
-	this.groupStack = array()
-	this.options = array()
+func NewSVGGroup() *SVGGroup {
+	return &SVGGroup{
+		groups:     map[string][]Object{},
+		groupStack: []string{},
+		options:    map[string]map[string]string{},
+	}
 }
 
-func (this *SVGGroup) GetGroup(groupName string) {
+func (this *SVGGroup) GetGroup(groupName string) []Object {
 	return this.groups[groupName]
 }
 
 func (this *SVGGroup) PushGroup(groupName string) {
-	if !isset(this.groups[groupName]) {
-		this.groups[groupName] = array()
-		this.options[groupName] = array()
+	if nil == (this.groups[groupName]) {
+		this.groups[groupName] = []Object{}
+		this.options[groupName] = map[string]string{}
 	}
 
 	this.groupStack = append(this.groupStack, groupName)
@@ -304,8 +322,13 @@ func (this *SVGGroup) PopGroup() {
 	 * NULL for an empty array, so this is safe to do when only one element
 	 * is left.
 	 */
-	array_pop(this.groupStack)
-	this.curGroup = array_pop(this.groupStack)
+	n := len(this.groupStack)
+	if n < 2 {
+		this.groupStack = this.groupStack[:0]
+		return
+	}
+	this.curGroup = this.groupStack[n-2]
+	this.groupStack = this.groupStack[:n-2]
 }
 
 func (this *SVGGroup) AddObject(o Object) {
@@ -317,8 +340,8 @@ func (this *SVGGroup) SetOption(opt, val string) {
 	this.options[this.curGroup][opt] = val
 }
 
-func (this *SVGGroup) Render() {
-	out = ``
+func (this *SVGGroup) Render() string {
+	out := ``
 
 	for groupName, objects := range this.groups {
 		out += "<g id=\"" + groupName + "\" "
@@ -340,6 +363,14 @@ func (this *SVGGroup) Render() {
 	return out
 }
 
+var _SVGPath_id = 0
+
+func SVGPath_id() string {
+	s := fmt.Sprintf("%d", _SVGPath_id)
+	_SVGPath_id++
+	return s
+}
+
 /*
  * The Path class represents lines and polygons.
  */
@@ -352,23 +383,17 @@ type SVGPath struct {
 	name    string
 }
 
-var _SVGPath_id = 0
+const SVGPath_CLOSED = 0x1
 
-func SVGPath_id() string {
-	s := fmt.Sprintf("%d", _SVGPath_id)
-	_SVGPath_id++
-	return s
-}
-
-const CLOSED = 0x1
-
-func (this *SVGPath) __construct() {
-	this.options = array()
-	this.points = array()
-	this.text = array()
-	this.ticks = array()
-	this.Flags = 0
-	this.name = SVGPath_id()
+func NewSVGPath() *SVGPath {
+	return &SVGPath{
+		options: map[string]string{},
+		points:  []Point{},
+		ticks:   []Point{},
+		Flags:   0,
+		text:    []*SVGText{},
+		name:    SVGPath_id(),
+	}
 }
 
 /*
@@ -386,11 +411,11 @@ func (this *SVGPath) __construct() {
  * This should only be called when we close a polygon.
  */
 func (this *SVGPath) OrderPoints() {
-	pPoints = count(this.points)
+	pPoints := len(this.points)
 
-	minY = this.points[0].Y
-	minX = this.points[0].X
-	minIdx = 0
+	minY := this.points[0].Y
+	minX := this.points[0].X
+	minIdx := 0
 	for i := 1; i < pPoints; i++ {
 		if this.points[i].Y <= minY {
 			minY = this.points[i].Y
@@ -408,8 +433,7 @@ func (this *SVGPath) OrderPoints() {
 	 * the front.
 	 */
 	if minIdx != 0 {
-		startPoints = array_splice(this.points, minIdx)
-		this.points = array_merge(startPoints, this.points)
+		this.points = append(this.points[minIdx:], this.points[:minIdx]...)
 	}
 }
 
@@ -417,18 +441,20 @@ func (this *SVGPath) OrderPoints() {
  * Useful for recursive walkers when speculatively trying a direction.
  */
 func (this *SVGPath) PopPoint() {
-	array_pop(this.points)
+	if len(this.points) > 0 {
+		this.points = this.points[:len(this.points)-1]
+	}
 }
 
 // FIXME(akavel): func (this *SVGPath) AddPoint(X, Y, Flags = Point_POINT) {
-func (this *SVGPath) AddPoint(X, Y Coord, Flags Point_Flags) {
-	p = NewPoint(X, Y)
+func (this *SVGPath) AddPoint(X, Y Coord, Flags Point_Flags) bool {
+	p := NewPoint(X, Y)
 
 	/*
 	 * If we attempt to add our original point back to the path, the polygon
 	 * must be closed.
 	 */
-	if count(this.points) > 0 {
+	if len(this.points) > 0 {
 		if this.points[0].X == p.X && this.points[0].Y == p.Y {
 			this.Flags |= SVGPath_CLOSED
 			return true
@@ -455,7 +481,7 @@ func (this *SVGPath) AddPoint(X, Y Coord, Flags Point_Flags) {
 /*
  * It's useful to be able to know the points in a shape.
  */
-func (this *SVGPath) GetPoints() {
+func (this *SVGPath) GetPoints() []Point {
 	return this.points
 }
 
@@ -465,13 +491,13 @@ func (this *SVGPath) GetPoints() {
  * parser works, we may have to use an inverted representation.
  */
 func (this *SVGPath) AddMarker(X, Y Coord, t Point_Flags) {
-	p = NewPoint(X, Y)
+	p := NewPoint(X, Y)
 	p.Flags |= t
 	this.points = append(this.points, p)
 }
 
 func (this *SVGPath) AddTick(X, Y Coord, t Point_Flags) {
-	p = NewPoint(X, Y)
+	p := NewPoint(X, Y)
 	p.Flags |= t
 	this.ticks = append(this.ticks, p)
 }
@@ -479,23 +505,23 @@ func (this *SVGPath) AddTick(X, Y Coord, t Point_Flags) {
 /*
  * Is this path closed?
  */
-func (this *SVGPath) IsClosed() {
-	return (this.Flags & SVGPath_CLOSED)
+func (this *SVGPath) IsClosed() bool {
+	return (this.Flags & SVGPath_CLOSED) != 0
 }
 
 func (this *SVGPath) AddText(t *SVGText) {
 	this.text = append(this.text, t)
 }
 
-func (this *SVGPath) GetText() {
+func (this *SVGPath) GetText() []*SVGText {
 	return this.text
 }
 
 func (this *SVGPath) SetID(id string) {
-	this.name = str_replace(' ', '_', str_replace('"', '_', id))
+	this.name = str_replace(` `, `_`, str_replace(`"`, `_`, id))
 }
 
-func (this *SVGPath) GetID() {
+func (this *SVGPath) GetID() string {
 	return this.name
 }
 
@@ -504,19 +530,17 @@ func (this *SVGPath) GetID() {
  * can be called after an individual SetOption call.
  */
 func (this *SVGPath) SetOptions(opt map[string]string) {
-	this.options = array_merge(this.options, opt)
+	for k, v := range opt {
+		this.options[k] = v
+	}
 }
 
 func (this *SVGPath) SetOption(opt, val string) {
 	this.options[opt] = val
 }
 
-func (this *SVGPath) GetOption(opt string) {
-	if isset(this.options[opt]) {
-		return this.options[opt]
-	}
-
-	return nil
+func (this *SVGPath) GetOption(opt string) string {
+	return this.options[opt]
 }
 
 /*
@@ -525,15 +549,15 @@ func (this *SVGPath) GetOption(opt string) {
  * same shape, we need to do a full point-in-polygon test. This algorithm
  * seems like the standard one. See: http://alienryderflex.com/polygon/
  */
-func (this *SVGPath) HasPoint(X, Y Coord) {
+func (this *SVGPath) HasPoint(X, Y Coord) bool {
 	if this.IsClosed() == false {
 		return false
 	}
 
-	oddNodes = false
+	oddNodes := false
 
-	bound = count(this.points)
-	for i, j := 0, count(this.points)-1; i < bound; i++ {
+	bound := len(this.points)
+	for i, j := 0, len(this.points)-1; i < bound; i++ {
 		if (this.points[i].GridY < Y && this.points[j].GridY >= Y ||
 			this.points[j].GridY < Y && this.points[i].GridY >= Y) &&
 			(this.points[i].GridX <= X || this.points[j].GridX <= X) {
@@ -565,13 +589,13 @@ type Matrix [][]Coord
  *
  * http://www.w3.org/TR/SVG/coords.html#TransformMatrixDefined
  */
-func (this *SVGPath) matrixTransform(matrix Matrix, X, Y Coord) {
-	xyMat = array(array(X), array(Y), array(1))
-	newXY = array(array())
+func (this *SVGPath) matrixTransform(matrix Matrix, X, Y Coord) (Coord, Coord) {
+	xyMat := Matrix{{X}, {Y}, {1}}
+	newXY := Matrix{{0}, {0}, {0}}
 
 	for i := 0; i < 3; i++ {
 		for j := 0; j < 1; j++ {
-			sum = 0
+			sum := Coord(0)
 
 			for k := 0; k < 3; k++ {
 				sum += matrix[i][k] * xyMat[k][j]
@@ -582,15 +606,16 @@ func (this *SVGPath) matrixTransform(matrix Matrix, X, Y Coord) {
 	}
 
 	/* Return the coordinates as a vector */
-	return array(newXY[0][0], newXY[1][0], newXY[2][0])
+	return newXY[0][0], newXY[1][0]
+	// return array(newXY[0][0], newXY[1][0], newXY[2][0])
 }
 
 /*
  * Translate the X and Y coordinates. tX and tY specify the distance to
  * transform.
  */
-func (this *SVGPath) translateTransform(tX, tY, X, Y Coord) {
-	matrix = array(array(1, 0, tX), array(0, 1, tY), array(0, 0, 1))
+func (this *SVGPath) translateTransform(tX, tY, X, Y Coord) (Coord, Coord) {
+	matrix := Matrix{{1, 0, tX}, {0, 1, tY}, {0, 0, 1}}
 	return this.matrixTransform(matrix, X, Y)
 }
 
@@ -600,8 +625,8 @@ func (this *SVGPath) translateTransform(tX, tY, X, Y Coord) {
  * in the old system. Thus, if you want to double the size of an object on
  * both axes, you sould call scaleTransform(0.5, 0.5, X, Y)
  */
-func (this *SVGPath) scaleTransform(sX, sY, X, Y Coord) {
-	matrix = array(array(sX, 0, 0), array(0, sY, 0), array(0, 0, 1))
+func (this *SVGPath) scaleTransform(sX, sY, X, Y Coord) (Coord, Coord) {
+	matrix := Matrix{{sX, 0, 0}, {0, sY, 0}, {0, 0, 1}}
 	return this.matrixTransform(matrix, X, Y)
 }
 
@@ -611,33 +636,31 @@ func (this *SVGPath) scaleTransform(sX, sY, X, Y Coord) {
  * is specified in degrees.
  */
 // FIXME(akavel): func (this *SVGPath) rotateTransform(angle, X, Y, cX = 0, cY = 0) {
-func (this *SVGPath) rotateTransform(angle float32, X, Y, cX, cY Coord) {
-	angle = angle * (pi() / 180)
+func (this *SVGPath) rotateTransform(angle float64, X, Y, cX, cY Coord) (Coord, Coord) {
+	angle = angle * (math.Pi / 180.0)
 	if cX != 0 || cY != 0 {
-		list(X, Y) = this.translateTransform(cX, cY, X, Y)
+		X, Y = this.translateTransform(cX, cY, X, Y)
 	}
 
-	matrix = array(array(cos(angle), -sin(angle), 0),
-		array(sin(angle), cos(angle), 0),
-		array(0, 0, 1))
-	ret = this.matrixTransform(matrix, X, Y)
+	matrix := Matrix{{Coord(math.Cos(angle)), Coord(-math.Sin(angle)), 0},
+		{Coord(math.Sin(angle)), Coord(math.Cos(angle)), 0},
+		{0, 0, 1}}
+	X, Y = this.matrixTransform(matrix, X, Y)
 
 	if cX != 0 || cY != 0 {
-		list(X, Y) = this.translateTransform(-cX, -cY, ret[0], ret[1])
-		ret[0] = X
-		ret[1] = Y
+		X, Y = this.translateTransform(-cX, -cY, X, Y)
 	}
 
-	return ret
+	return X, Y
 }
 
 /*
  * Skews along the X axis at specified angle. The angle is specified in
  * degrees.
  */
-func (this *SVGPath) skewXTransform(angle float32, X, Y Coord) {
-	angle = angle * (pi() / 180)
-	matrix = array(array(1, tan(angle), 0), array(0, 1, 0), array(0, 0, 1))
+func (this *SVGPath) skewXTransform(angle float64, X, Y Coord) (Coord, Coord) {
+	angle = angle * (math.Pi / 180.0)
+	matrix := Matrix{{1, Coord(math.Tan(angle)), 0}, {0, 1, 0}, {0, 0, 1}}
 	return this.matrixTransform(matrix, X, Y)
 }
 
@@ -645,16 +668,16 @@ func (this *SVGPath) skewXTransform(angle float32, X, Y Coord) {
  * Skews along the Y axis at specified angle. The angle is specified in
  * degrees.
  */
-func (this *SVGPath) skewYTransform(angle float32, X, Y Coord) {
-	angle = angle * (pi() / 180)
-	matrix = array(array(1, 0, 0), array(tan(angle), 1, 0), array(0, 0, 1))
+func (this *SVGPath) skewYTransform(angle float64, X, Y Coord) (Coord, Coord) {
+	angle = angle * (math.Pi / 180.0)
+	matrix := Matrix{{1, 0, 0}, {Coord(math.Tan(angle)), 1, 0}, {0, 0, 1}}
 	return this.matrixTransform(matrix, X, Y)
 }
 
 /*
  * Apply a transformation to a point p.
  */
-func (this *SVGPath) applyTransformToPoint(txf string, p Point, args []float32) {
+func (this *SVGPath) applyTransformToPoint(txf string, p Point, args []Coord) (Coord, Coord) {
 	switch txf {
 	case `translate`:
 		return this.translateTransform(args[0], args[1], p.X, p.Y)
@@ -663,44 +686,43 @@ func (this *SVGPath) applyTransformToPoint(txf string, p Point, args []float32) 
 		return this.scaleTransform(args[0], args[1], p.X, p.Y)
 
 	case `rotate`:
-		if count(args) > 1 {
-			return this.rotateTransform(args[0], p.X, p.Y, args[1], args[2])
+		if len(args) > 1 {
+			return this.rotateTransform(float64(args[0]), p.X, p.Y, args[1], args[2])
 		} else {
-			return this.rotateTransform(args[0], p.X, p.Y)
+			return this.rotateTransform(float64(args[0]), p.X, p.Y, 0, 0)
 		}
 
 	case `skewX`:
-		return this.skewXTransform(args[0], p.X, p.Y)
+		return this.skewXTransform(float64(args[0]), p.X, p.Y)
 
 	case `skewY`:
-		return this.skewYTransform(args[0], p.X, p.Y)
+		return this.skewYTransform(float64(args[0]), p.X, p.Y)
 	}
+	panic("transform not implemented: " + txf)
 }
 
 /*
  * Apply the transformation function txf to all coordinates on path p
  * providing args as arguments to the transformation function.
  */
-func (this *SVGPath) applyTransformToPath(txf string, p *map[string][]string, args []float32) {
-	pathCmds = count(p[`path`])
-	curPoint = NewPoint(0, 0)
-	prevType = nil
-	curType = nil
+func (this *SVGPath) applyTransformToPath(txf string, p map[string][]string, args []float64) {
+	pathCmds := len(p[`path`])
+	curPoint := NewPoint(0, 0)
+	var prevType, curType byte
 
 	for i := 0; i < pathCmds; i++ {
-		cmd = &p[`path`][i]
+		cmd := p[`path`][i]
 
 		prevType = curType
 		curType = cmd[0]
 
 		switch curType {
+		/* Can't transform those */
 		case 'z':
 		case 'Z':
-			/* Can't transform this */
-			break
 
 		case 'm':
-			if prevType != nil {
+			if prevType != 0 {
 				curPoint.X += cmd[1]
 				curPoint.Y += cmd[2]
 
