@@ -31,6 +31,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"math"
 	"strconv"
 	"strings"
@@ -1202,7 +1203,7 @@ func NewSVGText(X, Y Coord) *SVGText {
 	this := &SVGText{}
 	this.point = NewPoint(X, Y)
 	this.name = SVGText_id()
-	this.options = array()
+	this.options = map[string]string{}
 	return this
 }
 
@@ -1211,14 +1212,14 @@ func (this *SVGText) SetOption(opt, val string) {
 }
 
 func (this *SVGText) SetID(id string) {
-	this.name = str_replace(' ', '_', str_replace('"', '_', id))
+	this.name = str_replace(` `, `_`, str_replace(`"`, `_`, id))
 }
 
-func (this *SVGText) GetID() {
+func (this *SVGText) GetID() string {
 	return this.name
 }
 
-func (this *SVGText) GetPoint() {
+func (this *SVGText) GetPoint() Point {
 	return this.point
 }
 
@@ -1227,7 +1228,7 @@ func (this *SVGText) SetString(string_ string) {
 }
 
 func (this *SVGText) Render() string {
-	out = "<text X=\"" + this.point.X + "\" Y=\"" + this.point.Y + "\" id=\"text" + this.name + "\" "
+	out := "<text X=\"" + fmt.Sprint(this.point.X) + "\" Y=\"" + fmt.Sprint(this.point.Y) + "\" id=\"text" + this.name + "\" "
 	for opt, val := range this.options {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
@@ -1235,7 +1236,8 @@ func (this *SVGText) Render() string {
 		out += opt + "=\"" + val + "\" "
 	}
 	out += ">"
-	out += htmlentities(this.string_)
+	// FIXME(akavel): out += htmlentities(this.string_)
+	out += html.EscapeString(this.string_)
 	out += "</text>\n"
 	return out
 }
@@ -1269,9 +1271,9 @@ func (this *ASCIIToSVG) __construct(data []byte) {
 	/* For debugging purposes */
 	this.rawData = data
 
-	CustomObjects_LoadObjects()
+	// FIXME(akavel): CustomObjects_LoadObjects()
 
-	this.clearCorners = array()
+	this.clearCorners = [][2]int{}
 
 	/*
 	 * Parse out any command references. These need to be at the bottom of the
