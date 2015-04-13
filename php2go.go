@@ -8,8 +8,6 @@ import (
 	"os"
 	"regexp"
 	"strings"
-
-	"labix.org/v2/pipe"
 )
 
 type Matcher struct {
@@ -33,15 +31,13 @@ func publicize(name string) string {
 }
 
 func main() {
-	_ = pipe.Write
-
 	class := ""
 	replacements := map[string]string{}
 
 	scan := bufio.NewScanner(os.Stdin)
 	for scan.Scan() {
 		line := Matcher{Text: scan.Text()}
-		// FIXME(akavel): rescue strings and comments
+		// FIXME: rescue strings and comments
 		line.ReplaceAll(`\$`, ``)
 		line.ReplaceAll(`->`, `.`)
 		line.ReplaceAll(`<<<SVG`, "`")
@@ -54,6 +50,13 @@ func main() {
 		for before, after := range replacements {
 			line.ReplaceAll(before, after)
 		}
+
+		// TODO: add 'foreach(foo as bar => baz)' translation
+		// TODO: add 'expr1[] = expr2' translation to 'expr1 = append(expr1, expr2)'
+		// TODO: add '__construct' translation to 'NewCLASS(...) *CLASS'
+		// TODO: translate "{$expr}" and "$expr" string interpolations
+		// TODO: FUTURE: stop translation in '<<<SVG' ... 'SVG' region, if possible
+		// TODO: FUTURE: stop translation in comment blocks
 
 		switch {
 
