@@ -1269,7 +1269,7 @@ func (this *SVGText) SetString(string_ string) {
 }
 
 func (this *SVGText) Render() string {
-	out := "<text X=\"" + fmt.Sprint(this.point.X) + "\" Y=\"" + fmt.Sprint(this.point.Y) + "\" id=\"text" + this.name + "\" "
+	out := "<text x=\"" + fmt.Sprint(this.point.X) + "\" y=\"" + fmt.Sprint(this.point.Y) + "\" id=\"text" + this.name + "\" "
 	for opt, val := range this.options {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
