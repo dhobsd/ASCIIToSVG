@@ -1380,11 +1380,10 @@ func (this *ASCIIToSVG) Render() string {
 	 * Boilerplate header with definitions that we might be using for markers
 	 * and drop shadows.
 	 */
-	out := `
-<?xml version="1.0" standalone="no"?>
+	out := `<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" 
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Created with ASCIIToSVG (http://9vx.org/~dho/a2s/) -.
+<!-- Created with ASCIIToSVG (http://9vx.org/~dho/a2s/) -->
 <svg width="` + fmt.Sprint(canvasWidth) + `px" height="` + fmt.Sprint(canvasHeight) + `px" version="1.1"
   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
@@ -2563,10 +2562,10 @@ func (this *ASCIIToSVG) dumpGrid() {
 }
 
 func (this *ASCIIToSVG) getChar(row, col int) rune {
-	if row < len(this.grid) && col < len(this.grid[row]) {
-		return this.grid[row][col]
+	if row < 0 || col < 0 || row >= len(this.grid) || col >= len(this.grid[row]) {
+		return 0
 	}
-	return 0
+	return this.grid[row][col]
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
