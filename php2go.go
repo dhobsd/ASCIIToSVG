@@ -1,5 +1,8 @@
 // +build none
 
+// php2go is Copyright (c) 2015 by Mateusz Czapliński <czapkofan@gmail.com>
+// Licensed under GNU GPL v2+
+
 package main
 
 import (
