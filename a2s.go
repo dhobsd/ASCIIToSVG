@@ -392,7 +392,7 @@ func (this *SVGGroup) Render() string {
 			if strpos(opt, `a2s:`, 0) == 0 {
 				continue
 			}
-			out += "opt=\"" + val + "\" "
+			out += opt + "=\"" + val + "\" "
 		}
 		out += ">\n"
 
@@ -1180,7 +1180,7 @@ func (this *SVGPath) Render() string {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
 		}
-		out += "opt=\"" + val + "\" "
+		out += opt + "=\"" + val + "\" "
 	}
 	out += "d=\"" + path + "\" />\n"
 
