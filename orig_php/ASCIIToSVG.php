@@ -2138,7 +2138,7 @@ SVG;
       } elseif ($dir == self::DIR_DOWN) {
         if (!($bucket[$key] & self::DIR_LEFT) &&
             ($this->isBoxEdge($w, self::DIR_LEFT) || $this->isBoxCorner($w))) {
-          $newDir == self::DIR_LEFT;
+          $newDir = self::DIR_LEFT;
         } 
       } elseif ($dir == self::DIR_LEFT) {
         if (!($bucket[$key] & self::DIR_UP) &&
