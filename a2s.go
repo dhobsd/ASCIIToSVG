@@ -392,7 +392,7 @@ func (this *SVGGroup) Render() string {
 			if strpos(opt, `a2s:`, 0) == 0 {
 				continue
 			}
-			out += "opt=\"val\" "
+			out += "opt=\"" + val + "\" "
 		}
 		out += ">\n"
 
@@ -1180,7 +1180,7 @@ func (this *SVGPath) Render() string {
 		if strpos(opt, `a2s:`, 0) == 0 {
 			continue
 		}
-		out += "opt=\"val\" "
+		out += "opt=\"" + val + "\" "
 	}
 	out += "d=\"" + path + "\" />\n"
 
@@ -2556,28 +2556,28 @@ func (this *ASCIIToSVG) findCommands(box *SVGPath) string {
  * parsed, especially when used in conjunction with clearObject.
  */
 func (this *ASCIIToSVG) dumpGrid() {
-	for _, lines := range this.grid {
-		echo(implode(``, lines) + "\n")
+	for _, line := range this.grid {
+		fmt.Println(string(line))
 	}
 }
 
 func (this *ASCIIToSVG) getChar(row, col int) rune {
-	if isset(this.grid[row][col]) {
+	if row < len(this.grid) && col < len(this.grid[row]) {
 		return this.grid[row][col]
 	}
-
 	return 0
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isBoxEdge(char, dir = nil) {
 func (this *ASCIIToSVG) isBoxEdge(char rune, dir ASCIIToSVG_DIR) bool {
-	if dir == nil {
+	if dir == ASCIIToSVG_DIR_UNDEFINED {
 		return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '+'
 	} else if dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN {
 		return char == '|' || char == ':' || char == '*' || char == '+'
 	} else if dir == ASCIIToSVG_DIR_LEFT || dir == ASCIIToSVG_DIR_RIGHT {
 		return char == '-' || char == '=' || char == '*' || char == '+'
 	}
+	return false // FIXME(akavel): ok?
 }
 
 // FIXME(akavel): func (this *ASCIIToSVG) isEdge(char, dir = nil) {
@@ -2586,8 +2586,8 @@ func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) bool {
 		return true
 	}
 
-	if dir == nil {
-		return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '/' || char == "\\"
+	if dir == ASCIIToSVG_DIR_UNDEFINED {
+		return char == '-' || char == '|' || char == ':' || char == '=' || char == '*' || char == '/' || char == '\\'
 	} else if dir == ASCIIToSVG_DIR_UP || dir == ASCIIToSVG_DIR_DOWN {
 		return char == '|' || char == ':' || char == '*'
 	} else if dir == ASCIIToSVG_DIR_LEFT || dir == ASCIIToSVG_DIR_RIGHT {
@@ -2595,16 +2595,17 @@ func (this *ASCIIToSVG) isEdge(char rune, dir ASCIIToSVG_DIR) bool {
 	} else if dir == ASCIIToSVG_DIR_NE {
 		return char == '/'
 	} else if dir == ASCIIToSVG_DIR_SE {
-		return char == "\\"
+		return char == '\\'
 	}
+	return false
 }
 
 func (this *ASCIIToSVG) isBoxCorner(char rune) bool {
-	return char == '.' || char == "'" || char == '#'
+	return char == '.' || char == '\'' || char == '#'
 }
 
 func (this *ASCIIToSVG) isCorner(char rune) bool {
-	return char == '.' || char == "'" || char == '#' || char == '+'
+	return char == '.' || char == '\'' || char == '#' || char == '+'
 }
 
 func (this *ASCIIToSVG) isMarker(char rune) bool {
