@@ -1110,6 +1110,7 @@ class SVGPath {
     
     if (count($this->text) > 0) {
       foreach ($this->text as $text) {
+        $text->setID($this->name);
         $out_p .= "\t" . $text->render() . "\n";
       }
     }
