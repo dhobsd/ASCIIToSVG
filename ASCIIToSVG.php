@@ -926,7 +926,7 @@ class SVGPath {
       $objH = $maxY - $minY;
       
       if (isset($this->options['a2s:link'])) {
-        $out .="<a href=\"".$this->options['a2s:link']."\">";
+        $out .="<a xlink:href=\"".$this->options['a2s:link']."\">";
       }
       
       $i = 0;
@@ -1096,15 +1096,15 @@ class SVGPath {
     $out_p = "\t<path id=\"path{$this->name}\" ";
     foreach ($this->options as $opt => $val) {
       if (strpos($opt, 'a2s:', 0) === 0) {
-        if ( $opt=='a2s:link' ) {
+        if ($opt=='a2s:link') {
     	  $alnk = $val;
         }
     	continue;
       }
       $out_p .= "$opt=\"$val\" ";
     }
-    if ( isset($alnk) ) {
-      $out_p = "\t<a href=\"".$alnk."\">".$out_p;
+    if (isset($alnk)) {
+      $out_p = "\t<a xlink:href=\"".$alnk."\">".$out_p;
     }
     $out_p .= "d=\"{$path}\" />\n";
     
@@ -1114,7 +1114,7 @@ class SVGPath {
       }
     }
 
-    if ( isset($alnk) ) {
+    if (isset($alnk)) {
       $out_p .= '</a>';
     }    
     $out .= $out_p;
